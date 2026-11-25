@@ -1,0 +1,9 @@
+# 감지기별 설정 묶음과 학교별 값은 올리지 않는다
+dist/
+tools/school.json
+*.zip
+
+__pycache__/
+*.pyc
+.DS_Store
+build/

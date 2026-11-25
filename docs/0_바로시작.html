@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>교실 전파 감지기 - 바로 시작하기</title>
+<style>
+:root{--ink:#1b1f27;--sub:#5a6270;--line:#d9dee6;--bg:#fff;--soft:#f4f6f9;--red:#c62828;--redbg:#fdecea;--green:#1b7a48;--greenbg:#e6f5ec;--blue:#1d5fbf;--bluebg:#e8f0fc;--amber:#8a5a00;--amberbg:#fff3d6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.75 -apple-system,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
+main{max-width:820px;margin:0 auto;padding:24px 18px 80px}
+h1{font-size:30px;line-height:1.3;margin:8px 0 4px}
+h2{font-size:23px;margin:56px 0 10px;padding-top:18px;border-top:3px solid var(--ink)}
+h3{font-size:18px;margin:28px 0 6px}
+p{margin:8px 0}
+.lead{color:var(--sub);font-size:18px}
+img.pic{width:100%;border-radius:14px;border:1px solid var(--line);margin:14px 0}
+figure{margin:16px 0}
+figcaption{color:var(--sub);font-size:14px;text-align:center;margin-top:4px}
+svg{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:14px;background:#fff}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:15.5px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--soft)}
+.tablewrap{overflow-x:auto}
+ol.steps{counter-reset:s;list-style:none;padding:0;margin:12px 0}
+ol.steps>li{counter-increment:s;position:relative;padding:10px 12px 10px 56px;margin:8px 0;background:var(--soft);border-radius:12px}
+ol.steps>li::before{content:counter(s);position:absolute;left:12px;top:10px;width:32px;height:32px;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;text-align:center;line-height:32px}
+.box{border-radius:12px;padding:12px 16px;margin:14px 0}
+.warn{background:var(--redbg);border-left:6px solid var(--red)}
+.ok{background:var(--greenbg);border-left:6px solid var(--green)}
+.tip{background:var(--bluebg);border-left:6px solid var(--blue)}
+.note{background:var(--amberbg);border-left:6px solid var(--amber)}
+.box b:first-child{display:block;margin-bottom:2px}
+code{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font:14.5px ui-monospace,Menlo,Consolas,monospace}
+pre{background:#1e222b;color:#e9edf3;border-radius:12px;padding:14px 16px;overflow-x:auto;font:14.5px/1.6 ui-monospace,Menlo,Consolas,monospace}
+.toc{background:var(--soft);border-radius:12px;padding:12px 18px}
+.toc a{color:var(--ink)}
+.check li{list-style:"☐  ";margin:4px 0}
+.small{font-size:14px;color:var(--sub)}
+@media print{h2{break-before:page}main{max-width:none}pre{white-space:pre-wrap}}
+</style>
+</head>
+<body>
+<main>
+<p class="small">교실 전파 감지기(bt-scout) · 2026년 11월</p>
+<h1>바로 시작하기</h1>
+<p class="lead">필요한 것: <b>Pico 2 W(또는 2 WH) 1개와 USB 케이블</b>. LED는 선택입니다. 이것만으로 감지와 대시보드까지 돌려 봅니다. 10~15분이면 됩니다.</p>
+<div class="box note"><b>아직 실물에서 돌려 보지 않은 프로그램입니다</b>
+컴퓨터에서 가상 자료로만 시험했습니다. 안 되는 곳이 있으면 Thonny 아래 창에 나오는 붉은 글씨를 그대로 알려 주세요.</div>
+
+<h2 id="s1">1. 꽂기</h2>
+<ol class="steps">
+<li>피코를 Grove 쉴드에 꽂습니다(USB 방향을 쉴드의 USB 표시에 맞춤). 쉴드 스위치는 <b>3V3</b>.</li>
+<li>(선택) LED가 있으면 쉴드의 <b>D16</b>에 꽂습니다. 없으면 이 단계를 건너뜁니다.</li>
+</ol>
+<div class="box tip"><b>LED는 필수가 아닙니다</b>
+피코 본체의 작은 초록 LED가 똑같이 움직입니다. 그것만 보고 진행해도 됩니다.</div>
+
+<h2 id="s2">2. MicroPython 넣기 (처음 한 번)</h2>
+<ol class="steps">
+<li>micropython.org → Download → <b>Raspberry Pi Pico 2 W</b>의 최신 <code>.uf2</code>를 받습니다. ("2"와 "W"가 둘 다 있는 것)</li>
+<li>피코의 <b>BOOTSEL</b> 단추를 누른 채 USB를 컴퓨터에 꽂습니다.</li>
+<li>나타난 <code>RP2350</code> 드라이브에 <code>.uf2</code>를 끌어다 놓습니다. 드라이브가 사라지면 끝입니다.</li>
+</ol>
+
+<h2 id="s3">3. 파일 4개 넣기</h2>
+<ol class="steps">
+<li>Thonny(thonny.org)를 열고 오른쪽 아래에서 <b>MicroPython (Raspberry Pi Pico)</b>를 고릅니다.</li>
+<li><b>보기 → 파일</b>을 켜고, "이 컴퓨터" 칸에서 <code>bt-scout/firmware</code>로 들어갑니다.</li>
+<li><code>main.py</code>, <code>detect.py</code>, <code>config.py</code>, <code>page.html</code>을 각각 오른쪽 단추 → <b>/에 업로드</b>.</li>
+<li>피코 쪽 <code>config.py</code>를 열어 <code>AP_PASSWORD</code>를 8자 이상으로 새로 정하고 저장합니다. 나머지는 그대로 둡니다.</li>
+<li>USB를 뽑았다 다시 꽂습니다(충전기나 보조배터리도 됩니다).</li>
+</ol>
+<pre>GRADE = 1              # 학년
+CLASSES = "1,2"        # 맡은 두 반. 그대로 두면 "1학년 1,2반" 자리에 나옵니다
+AP_SSID = "SCOUT"      # 와이파이 이름
+AP_PASSWORD = "12345678"   # 기본값. 꼭 바꾸세요
+LED_TYPE = "single"    # LED 10개 막대(RGB LED Stick)면 "stick"</pre>
+
+<h2 id="s4">4. 보기</h2>
+<ol class="steps">
+<li>10초 기다립니다. LED 줄의 첫 칸이 <b>초록으로 켜지면</b> 정상입니다. (피코 본체의 작은 LED는 3초마다 반짝입니다.)</li>
+<li>휴대전화의 <b>블루투스를 끄고</b> 와이파이 <code>SCOUT</code>에 붙습니다. "인터넷 없음"이 나오면 <b>연결 유지</b>.</li>
+<li>사파리나 크롬 주소창에 <code>192.168.4.1</code>.</li>
+<li>레이더가 돌아가는 화면이 뜹니다. 다른 전화나 이어폰의 블루투스를 켜고 가까이 두면 10초쯤 뒤 레이더에 점이 켜지고 LED가 계속 켜집니다.</li>
+</ol>
+<img class="pic" src="img/screen_radar.png" alt="레이더 모드 화면 예시" style="max-width:420px;display:block;margin:14px auto">
+<img class="pic" src="img/screen_building.png" alt="건물 모드 화면 예시" style="max-width:420px;display:block;margin:14px auto">
+<p class="small">위 화면은 컴퓨터에서 가상 자료로 띄운 예시입니다.</p>
+
+<h2 id="s5">5. 화면 읽는 법</h2>
+<div class="tablewrap"><table>
+<tr><th>탭</th><th>뜻</th></tr>
+<tr><td>레이더</td><td>지금 연결된 감지기가 잡는 기기. 가운데에 가까울수록 신호가 셉니다. 파랑은 블루투스, 빨강은 와이파이, 흐린 점은 약하거나 확인 중인 신호. <b>방향은 실제 방향이 아닙니다.</b></td></tr>
+<tr><td>건물</td><td>감지기 여러 대의 현황을 학년·반 위치대로. 반별 대수, n분 전과의 비교, 새로 잡힌 기기 이름. "기기 이름" 보기로 바꾸면 위치별 이름만 봅니다. 지금은 1대뿐이라 한 칸만 채워집니다.</td></tr>
+<tr><td>로그</td><td>조금 전까지 잡히던 기기와 감지 기록(언제, 무엇이, 몇 분 동안).</td></tr>
+<tr><td>설정</td><td>감지 세기 기준, 기준 측정(빈 교실에서만).</td></tr>
+</table></div>
+
+<h2 id="s6">6. 꼭 지킬 것</h2>
+<div class="box warn"><b>확인하는 기기의 블루투스는 끕니다</b>
+켜져 있으면 그 기기가 감지됩니다.</div>
+<div class="box warn"><b>기준 측정은 빈 교실에서만</b>
+학생이 있을 때 누르면 학생의 기기가 "원래 있던 것"으로 기억되어 감지되지 않습니다.</div>
+<div class="box note"><b>기록은 전원이 꺼지면 사라집니다</b>
+감지기 안에는 최근 6시간만 메모리에 있습니다. 휴대전화에 모은 기록은 "기록 지우기"를 누를 때까지 남습니다.</div>
+<div class="box note"><b>초록이라고 기기가 없는 것은 아닙니다</b>
+꺼진 기기, 블루투스를 끈 기기, 이동통신만 쓰는 기기는 보이지 않습니다.</div>
+
+<h2 id="s7">7. 다음 단계</h2>
+<ul>
+<li>8대로 늘릴 때: 감지기마다 <code>GRADE</code>(1, 2)와 <code>CLASSES</code>("1,2" "3,4" "5,6" "7,8")만 바꿉니다. 와이파이 이름과 암호는 모두 같게 둡니다. 「① 피코 편」 7장.</li>
+<li>LED 10개 막대가 오면: D16에 꽂고 <code>LED_TYPE = "stick"</code>.</li>
+<li>ESP32가 오면: 「② ESP32 편」.</li>
+<li>코드 한 장짜리로 가볍게 해 보려면: <code>simple/main.py</code> 하나만 넣습니다(LED 10개 막대 전용, 화면 없음).</li>
+</ul>
+</main>
+</body>
+</html>

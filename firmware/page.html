@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>전파 감지 현황</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#16181d;--sub:#5d6470;--line:#dfe3e8;--ok:#17794a;--okbg:#e3f5ea;--bad:#b3261e;--badbg:#fde7e5;--wait:#8a5a00;--waitbg:#fff1cf;--bt:#1d5fbf;--hot:#c62828;--sta:#c62828;--yard:#e9f3ec}
+@media(prefers-color-scheme:dark){:root{--bg:#111317;--card:#1b1e24;--ink:#eef0f3;--sub:#a3aab5;--line:#2c313a;--ok:#6fd49c;--okbg:#143424;--bad:#ff8a80;--badbg:#44191a;--wait:#ffcf70;--waitbg:#3d2e08;--bt:#7fb0ff;--hot:#ff7b72;--sta:#ff7b72;--yard:#16241b}}
+*{box-sizing:border-box}
+body{margin:0;padding:14px;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,system-ui,sans-serif}
+main{max-width:720px;margin:0 auto}
+h1{font-size:20px;margin:0}
+h2{font-size:15px;margin:22px 0 6px;color:var(--sub)}
+.sub{color:var(--sub);font-size:13.5px}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+#banner{margin:12px 0;padding:14px;border-radius:14px;font-size:21px;font-weight:700;text-align:center}
+.ok{background:var(--okbg);color:var(--ok)}.bad{background:var(--badbg);color:var(--bad)}.wait{background:var(--waitbg);color:var(--wait)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin:8px 0}
+.al{border-color:var(--bad);border-width:2px}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--line);color:var(--sub);white-space:nowrap}
+.tag.bad{background:var(--badbg);color:var(--bad)}
+.r{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.bar{height:6px;border-radius:3px;background:var(--line);margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--sub)}
+.al .bar i{background:var(--bad)}
+button{font:inherit;padding:8px 13px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bld{background:#06120c;border-radius:18px;padding:14px 12px;margin:10px 0;color:#d7e6dd;
+  background-image:linear-gradient(rgba(60,220,140,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(60,220,140,.05) 1px,transparent 1px);background-size:22px 22px}
+.bhd{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.bt1{font-size:26px;font-weight:800;letter-spacing:.01em;color:#7dffb5;font-variant-numeric:tabular-nums}
+.bt1.hit{color:#ff8f8f}
+.bt2{font-size:13px;color:#7fae95}
+.seg{display:flex;align-items:center;gap:4px;font-size:12.5px;color:#7fae95}
+.seg button{padding:5px 10px;border-radius:99px;border:1px solid #1f6b45;background:transparent;color:#bfe9d0;font-size:13px}
+.seg button.on{background:#7dffb5;color:#06120c;border-color:#7dffb5;font-weight:700}
+.seg span{margin:0 4px}
+.floor{position:relative;border:1px solid #1f6b45;border-radius:14px;padding:10px 10px 10px 38px;margin:10px 0;background:rgba(10,29,19,.82)}
+.floor .fl{position:absolute;left:0;top:0;bottom:0;width:30px;border-radius:14px 0 0 14px;background:#0f2a1c;border-right:1px solid #1f6b45;
+  display:flex;align-items:center;justify-content:center}
+.floor .fl b{writing-mode:vertical-rl;font-size:13px;letter-spacing:.2em;color:#7dffb5;white-space:nowrap}
+.fsum{display:flex;justify-content:space-between;font-size:12.5px;color:#7fae95;margin:0 2px 6px;gap:8px;flex-wrap:wrap}
+.fsum b{color:#d7e6dd;font-weight:700}
+.side{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.yard{font-size:11px;text-align:center;color:#4f8f6e;letter-spacing:.5em;margin:7px 0;border-top:1px dashed #1f6b45;border-bottom:1px dashed #1f6b45;padding:2px 0}
+.unit{position:relative;border:1px solid #1f6b45;border-radius:11px;padding:8px 9px 7px;min-width:0;cursor:pointer;background:#0a1d13;transition:box-shadow .4s,border-color .4s}
+.unit.sel{outline:2px solid #d7e6dd;outline-offset:1px}
+.unit.live{border-color:#7dffb5}
+.unit.none{opacity:.45;border-style:dashed}
+.unit.bt{border-color:#5aa9ff;box-shadow:0 0 14px rgba(90,169,255,.35),inset 0 0 18px rgba(90,169,255,.12)}
+.unit.wf{border-color:#ff6b6b;box-shadow:0 0 14px rgba(255,107,107,.4),inset 0 0 18px rgba(255,107,107,.13)}
+.unit.up:after{content:"";position:absolute;inset:-1px;border-radius:11px;border:2px solid currentColor;opacity:0;animation:rise 2s ease-out infinite;pointer-events:none}
+.unit.bt.up{color:#5aa9ff}.unit.wf.up{color:#ff6b6b}
+@keyframes rise{0%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(1.06)}}
+.unit .nm{font-weight:700;color:#d7e6dd;font-size:14.5px}
+.unit .when{font-size:11.5px;color:#7fae95;white-space:nowrap}
+.unit .when.on{color:#7dffb5}
+.big{font-size:32px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;color:#7dffb5;display:flex;align-items:baseline;gap:2px;flex-wrap:wrap}
+.unit.bt .big{color:#8cc3ff;text-shadow:0 0 12px rgba(90,169,255,.6)}
+.unit.wf .big{color:#ff9b9b;text-shadow:0 0 12px rgba(255,107,107,.6)}
+.big small{font-size:13px;font-weight:700}
+.dl{font-size:12.5px;font-weight:700;margin-left:6px;padding:1px 7px;border-radius:99px;white-space:nowrap;text-shadow:none}
+.dl.up{background:#4a1a1a;color:#ff9b9b}.dl.down{background:#123a25;color:#7dffb5}.dl.same{color:#7fae95;padding:0;font-weight:400}
+.mix{font-size:12px;color:#7fae95;margin-top:1px}
+.mix .b{color:#8cc3ff;font-weight:700}.mix .h{color:#ff9b9b;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;min-height:0}
+.chip{font-size:11.5px;line-height:1.5;padding:0 7px;border-radius:99px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.b{background:rgba(90,169,255,.18);color:#a9d2ff;border:1px solid rgba(90,169,255,.5)}
+.chip.h{background:rgba(255,107,107,.18);color:#ffb3b3;border:1px solid rgba(255,107,107,.5)}
+.chip.m{color:#7fae95;border:1px solid #1f6b45}
+svg.tl{width:100%;height:20px;display:block;background:rgba(0,0,0,.35);border-radius:4px;margin-top:6px}
+.nrow{display:flex;gap:8px;padding:7px 2px;border-top:1px dashed #1f6b45;cursor:pointer;align-items:flex-start}
+.nrow:first-child{border-top:0}
+.nrow.sel{background:rgba(125,255,181,.07);border-radius:8px}
+.nrow .nl{flex:0 0 74px;font-weight:700;font-size:14px;color:#d7e6dd}
+.nrow .nl small{display:block;font-weight:400;font-size:11px;color:#7fae95}
+.nrow .nl small.on{color:#7dffb5}
+.nrow .chips{margin-top:0;flex:1;min-width:0}
+.nrow .chip{font-size:12.5px;line-height:1.7}
+.nrow .none{font-size:12.5px;color:#4f8f6e}
+.blg{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:center;font-size:12px;color:#7fae95;margin-top:10px}
+.blg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}
+@media(prefers-reduced-motion:reduce){.unit.up:after{animation:none}}
+.ev{display:flex;gap:10px;align-items:baseline;padding:7px 0;border-top:1px solid var(--line)}
+.ev:first-child{border-top:0}
+.ev .t{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:700}
+.k{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+#err{color:var(--bad);font-size:14px}
+.tabs{display:flex;gap:6px;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:9}
+.tabs button{flex:1;padding:9px 2px;font-weight:700}
+.tabs button span{font-weight:400;font-size:13px;margin-left:3px}
+.tabs button.alert{border-color:var(--bad);color:var(--bad)}
+.tabs button.on.alert{background:var(--bad);border-color:var(--bad);color:#fff}
+section{display:none}section.on{display:block}
+details.grp{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:8px 0;padding:0 10px}
+details.grp summary{padding:11px 3px;cursor:pointer;font-weight:700;color:var(--sub)}
+details.grp[open] summary{border-bottom:1px solid var(--line);margin-bottom:6px}
+details.grp .card{background:var(--bg)}
+.card.gone{opacity:.62;border-style:dashed}
+.card .k{vertical-align:middle}
+.scope{background:#06120c;border-radius:18px;padding:16px 12px 12px;margin:12px 0;color:#bfe9d0}
+.radar{position:relative;width:min(76vw,300px);aspect-ratio:1;margin:0 auto;border-radius:50%;overflow:hidden;border:2px solid #2a8c5c;
+  background:radial-gradient(circle,#123524 0,#0a1d13 62%,#06120c 100%);box-shadow:0 0 26px rgba(60,220,140,.25),inset 0 0 40px rgba(0,0,0,.6);transition:border-color .4s,box-shadow .4s}
+.radar.hit{border-color:#ff6b6b;box-shadow:0 0 30px rgba(255,90,90,.45),inset 0 0 40px rgba(0,0,0,.6)}
+.radar.learn{border-color:#ffd24a}
+.radar svg{position:absolute;inset:0;width:100%;height:100%}
+.sweep{position:absolute;inset:0;border-radius:50%;animation:spin 4s linear infinite;
+  background:conic-gradient(from 0deg,rgba(90,255,170,0) 0deg,rgba(90,255,170,0) 250deg,rgba(90,255,170,.07) 300deg,rgba(90,255,170,.5) 360deg)}
+.sweep:after{content:"";position:absolute;left:50%;top:0;width:2px;height:50%;margin-left:-1px;background:linear-gradient(#9dffc9,rgba(157,255,201,.1))}
+@keyframes spin{to{transform:rotate(360deg)}}
+.blip{position:absolute;width:9px;height:9px;margin:-4.5px;border-radius:50%;background:#4f8f6e;opacity:.75;transition:left .8s,top .8s}
+.blip.al{width:14px;height:14px;margin:-7px;opacity:1;box-shadow:0 0 10px currentColor;background:currentColor}
+.blip.al:after{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid currentColor;animation:ping 1.6s ease-out infinite}
+@keyframes ping{from{transform:scale(.6);opacity:.9}to{transform:scale(2.6);opacity:0}}
+.blip.bt{color:#5aa9ff}.blip.hot{color:#ff6b6b}.blip.sta{color:#ff6b6b}
+.core{position:absolute;left:50%;top:50%;width:10px;height:10px;margin:-5px;border-radius:50%;background:#9dffc9;box-shadow:0 0 12px #9dffc9}
+.read{display:flex;justify-content:center;gap:14px;margin-top:12px;font-weight:700;font-size:14.5px;flex-wrap:wrap}
+.read .b{color:#5aa9ff}.read .h{color:#ff6b6b}.read .s{color:#ff6b6b}.read .z{color:#7dffb5}
+.scope .cap{text-align:center;font-size:12.5px;color:#7fae95;margin-top:6px}
+.scope .st{text-align:center;font-size:19px;font-weight:700;letter-spacing:.02em;margin-bottom:12px;color:#7dffb5}
+.scope .st.hit{color:#ff8f8f}.scope .st.learn{color:#ffd24a}
+.care{border-radius:14px;margin:12px 0;overflow:hidden;border:1px solid #e0b64a;background:var(--waitbg)}
+.care>b{display:block;background:#e0b64a;color:#2b2000;padding:6px 13px;font-size:14px;letter-spacing:.04em}
+.care ol{margin:0;padding:8px 13px 10px 13px;list-style:none;counter-reset:c}
+.care li{counter-increment:c;position:relative;padding:5px 0 5px 34px;color:var(--ink);font-size:14.5px}
+.care li:before{content:counter(c);position:absolute;left:0;top:5px;width:23px;height:23px;border-radius:50%;background:#e0b64a;color:#2b2000;font-weight:700;font-size:13px;text-align:center;line-height:23px}
+.care li b{color:var(--wait)}
+@media(prefers-reduced-motion:reduce){.sweep,.blip.al:after{animation:none}}
+</style>
+</head>
+<body>
+<main>
+<div class="row"><h1>전파 감지 현황</h1><span class="sub">지금 연결: <b id="unit">-</b></span></div>
+<nav class="tabs">
+  <button id="tb-now" onclick="tab('now')">레이더<span id="nnow"></span></button>
+  <button id="tb-all" onclick="tab('all')">건물<span id="nall"></span></button>
+  <button id="tb-log" onclick="tab('log')">로그<span id="nlog"></span></button>
+  <button id="tb-set" onclick="tab('set')">설정</button>
+</nav>
+<div id="err"></div>
+
+<section id="t-now">
+<div class="scope">
+  <div class="st" id="banner">불러오는 중</div>
+  <div class="radar" id="radar">
+    <svg viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="#2f9e68" stroke-width=".35" opacity=".65">
+      <circle cx="50" cy="50" r="16"/><circle cx="50" cy="50" r="32"/><circle cx="50" cy="50" r="48"/>
+      <path d="M50 2V98M2 50H98" stroke-dasharray="1 2"/></g></svg>
+    <div class="sweep"></div><div id="blips"></div><div class="core"></div>
+  </div>
+  <div class="read" id="read"></div>
+  <div class="cap">지금 잡히는 것만 표시합니다. 가운데에 가까울수록 신호가 세고, 점의 방향은 실제 방향이 아닙니다.</div>
+</div>
+<h2>지금 가까이에서 잡히는 것</h2>
+<div id="near"></div>
+<div class="sub" id="wnote"></div>
+<div class="sub" id="snote"></div>
+<div id="rfbox" style="display:none"><div class="card" id="rfcard"></div></div>
+<div class="care"><b>확인하기 전에</b><ol>
+  <li>이 기기의 <b>블루투스를 끄고</b> 보세요. 켜져 있으면 이 기기가 감지됩니다.</li>
+  <li><b>기준 측정</b>은 학생이 없는 <b>빈 교실</b>에서만 누르세요.</li>
+  <li>초록(감지 없음)이어도 <b>기기가 없다는 뜻은 아닙니다.</b> 꺼진 기기와 이동통신만 쓰는 기기는 보이지 않습니다.</li>
+  <li>감지되어도 <b>부정행위라는 뜻은 아닙니다.</b> 교실에서 직접 확인한 뒤 판단하세요.</li>
+</ol></div>
+
+</section>
+
+<section id="t-log">
+<div class="card">
+  <div class="ctl"><span><b>'지금'으로 보는 시간</b></span>
+  <button id="w10" onclick="setW(10)">10초</button><button id="w20" onclick="setW(20)">20초</button><button id="w60" onclick="setW(60)">60초</button></div>
+  <div class="sub">블루투스 기기가 이 시간 안에 다시 잡히지 않으면 '지금'에서 빠져 여기 로그로 옵니다. 짧으면 빨리 빠지지만 약한 기기가 들락날락하고, 길면 떠난 기기가 '지금'에 오래 남습니다. 와이파이는 훑는 간격이 길어 따로 75초를 씁니다.</div>
+</div>
+<h2>조금 전까지 잡히던 것 (최근 3분)</h2>
+<div id="gone"></div>
+<h2><span id="myname">-</span> 감지 기록</h2>
+<div class="card" id="myevents"><span class="sub">기록이 없습니다.</span></div>
+<h2>그 밖의 신호</h2>
+<div id="groups"></div>
+</section>
+
+<section id="t-all">
+<div class="bld">
+  <div class="bhd"><div><div class="bt1" id="btot">-</div><div class="bt2" id="bsub"></div></div>
+    <div class="seg"><button id="a5" onclick="setA(5)">5분</button><button id="a10" onclick="setA(10)">10분</button><button id="a30" onclick="setA(30)">30분</button><span>전과 비교</span></div></div>
+  <div class="seg" style="margin-bottom:10px"><span>보기</span><button id="v-num" onclick="setV('num')">대수</button><button id="v-name" onclick="setV('name')">기기 이름</button></div>
+  <div id="map"></div>
+  <div class="blg"><span><i style="background:#5aa9ff"></i>블루투스</span><span><i style="background:#ff6b6b"></i>와이파이</span><span><i style="background:#7dffb5"></i>감지 없음</span><span>＋ 새로 잡힌 기기</span></div>
+  <div class="seg" style="justify-content:center;margin-top:8px"><span>막대 범위</span><button id="h1" onclick="setH(1)">1시간</button><button id="h3" onclick="setH(3)">3시간</button><button id="h6" onclick="setH(6)">6시간</button></div>
+</div>
+<div class="sub">숫자는 그 감지기가 맡은 두 반에서 잡힌 기기 수입니다. 두 반 중 어느 쪽인지는 구분하지 못합니다. 연결되지 않은 감지기는 마지막으로 들렀을 때의 값입니다. 칸을 누르면 아래에 기록이 나옵니다.</div>
+
+<h2><span id="selname">-</span> 감지 기록</h2>
+<div class="card" id="events"><span class="sub">기록이 없습니다.</span></div>
+</section>
+
+<section id="t-set">
+<h2>설정 (지금 연결된 감지기)</h2>
+<div class="card">
+  <div class="ctl"><span>감지 세기 기준 <b id="th">-</b> dBm</span>
+  <button onclick="th(-5)">더 멀리까지</button><button onclick="th(5)">가까운 것만</button></div>
+  <div class="sub">숫자가 작을수록(-85 쪽) 먼 기기까지 잡고, 옆 교실·복도 신호도 늘어납니다.</div>
+</div>
+<div class="card">
+  <div class="ctl"><span>기준 기기 <b id="base">0</b>대</span>
+  <button onclick="learn()">기준 측정 (60초)</button><button onclick="clearBase()">기준 지우기</button></div>
+  <div class="sub">학생이 들어오기 전 빈 교실일 때만 누릅니다. 늘 켜져 있는 기기와 주변 공유기를 감지에서 뺍니다.</div>
+</div>
+<div class="card">
+  <div class="ctl"><button onclick="wipe()">이 화면에 모아 둔 기록 지우기</button></div>
+  <div class="sub">기록은 이 휴대 기기의 브라우저에만 모입니다. 감지기 전원이 꺼지면 감지기 안의 기록은 사라집니다.</div>
+</div>
+<p class="sub">사파리나 크롬에서 여세요. 와이파이에 붙을 때 저절로 뜨는 작은 창에서는 기록이 모이지 않습니다.</p>
+</section>
+</main>
+<script>
+var S=null,CUR=null,SEL=null,HOURS=3,MEM={},TAB='now',WIN=20,AGO=10,VIEW='num';
+var GRADES=[2,1],PAIRS=['1,2','3,4','5,6','7,8'];
+function uname(g,p){return g+'학년 '+p+'반'}
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function load(){try{var t=localStorage.getItem('scout');if(t)MEM=JSON.parse(t)||{};var h=+localStorage.getItem('scoutH');if(h)HOURS=h;var w=+localStorage.getItem('scoutW');if(w)WIN=w;var b=localStorage.getItem('scoutTab');if(b)TAB=b;var a=+localStorage.getItem('scoutAgo');if(a)AGO=a;var v=localStorage.getItem('scoutView');if(v)VIEW=v}catch(e){}}
+function save(){try{localStorage.setItem('scout',JSON.stringify(MEM));localStorage.setItem('scoutH',HOURS);localStorage.setItem('scoutW',WIN);localStorage.setItem('scoutTab',TAB);localStorage.setItem('scoutAgo',AGO);localStorage.setItem('scoutView',VIEW)}catch(e){}}
+function ago(ms){var m=Math.round((Date.now()-ms)/60000);return m<1?'방금':m<60?m+'분 전':Math.floor(m/60)+'시간 '+(m%60)+'분 전'}
+function hm(ms){var d=new Date(ms);return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
+function abs(u,t){return u.got-(u.now-t)*1000}
+function timeline(u){
+  var n=HOURS*12,out='',end=Date.now(),span=HOURS*3600000,bk={};
+  (u.bins||[]).forEach(function(b){
+    var ms=abs(u,b[0]*60+30),i=Math.floor((ms-(end-span))/300000);
+    if(i<0||i>=n)return;var o=bk[i]||(bk[i]=[0,0]);o[0]=Math.max(o[0],b[1]);o[1]=Math.max(o[1],b[2]+b[3]);
+  });
+  var s0=(abs(u,u.start)-(end-span))/300000,s1=(u.got-(end-span))/300000;
+  s0=Math.max(0,Math.min(n,s0));s1=Math.max(0,Math.min(n,s1));
+  if(s1>s0)out+='<rect x="'+s0+'" y="19" width="'+(s1-s0)+'" height="1" fill="#2a8c5c"/>';
+  for(var i in bk){var o=bk[i],h=Math.min(18,4+(o[0]+o[1])*3);
+    out+='<rect x="'+i+'" y="'+(19-h)+'" width="0.8" height="'+h+'" fill="'+(o[1]?'#ff6b6b':'#5aa9ff')+'"/>'}
+  return '<svg class="tl" viewBox="0 0 '+n+' 20" preserveAspectRatio="none">'+out+'</svg>';
+}
+function cur(u){var k=u.counts||[0,0,0,0];return k[0]+k[1]+k[2]}
+function past(u,mins){
+  // 수집 시점보다 mins분 전에 잡혀 있던 수. 그때 기록이 없으면 null.
+  var t=u.now-mins*60;if(t<u.start)return null;
+  var m=Math.floor(t/60),v=0;
+  (u.bins||[]).forEach(function(b){if(b[0]===m||b[0]===m-1)v=Math.max(v,b[1]+b[2]+b[3])});
+  return v;
+}
+function delta(c,p){
+  if(p===null)return '';
+  var d=c-p;
+  return '<span class="dl '+(d>0?'up':d<0?'down':'same')+'">'+(d>0?'▲'+d:d<0?'▼'+(-d):'＝')+'</span>';
+}
+function fresh(u){
+  // 수집 시점 기준 최근 AGO분 안에 새로 잡히기 시작한 기기의 짧은 이름
+  var out=[],seen={};
+  (u.events||[]).forEach(function(e){
+    if(e[0]<u.now-AGO*60)return;
+    var p=String(e[3]).split(' · '),t=e[2]==='hot'?p[0]:(p[1]||p[0].replace(/\(.*\)/,''));
+    t=t.trim();if(!t||seen[t])return;seen[t]=1;out.push([e[2]==='bt'?'b':'h',t]);
+  });
+  return out.reverse();
+}
+function short(e){
+  var p=String(e[3]).split(' · ');
+  return (e[2]==='hot'?p[0]:(p[1]||p[0].replace(/\(.*\)/,''))).trim();
+}
+function present(u){
+  // 수집 시점에 잡히고 있던 기기 이름(마지막으로 잡힌 지 90초 이내인 기록)
+  var out=[],cnt={};
+  (u.events||[]).forEach(function(e){
+    if(e[1]<u.now-90)return;
+    var t=short(e);if(!t)return;
+    var key=(e[2]==='bt'?'b':'h')+t;
+    if(cnt[key]){cnt[key][2]++;return}
+    cnt[key]=[e[2]==='bt'?'b':'h',t,1];out.push(cnt[key]);
+  });
+  return out;
+}
+function nrow(name,label){
+  var u=MEM[name],live=name===CUR;
+  var h='<div class="nrow'+(name===SEL?' sel':'')+'" onclick="pick(\''+name+'\')"><div class="nl">'+esc(label)+'<small'+(live?' class="on"':'')+'>'+(live?'● 연결됨':u?ago(u.got):'안 들름')+'</small></div>';
+  if(!u)return h+'<div class="none">아직 안 들름</div></div>';
+  var f=present(u),ch='';
+  f.forEach(function(x){ch+='<span class="chip '+x[0]+'">'+esc(x[1])+(x[2]>1?' ×'+x[2]:'')+'</span>'});
+  return h+(ch?'<div class="chips">'+ch+'</div>':'<div class="none">잡힌 기기 없음</div>')+'</div>';
+}
+function setV(v){VIEW=v;save();drawMap()}
+function cell(name,label){
+  var u=MEM[name],live=name===CUR,c=u?cur(u):0,k=u?(u.counts||[0,0,0,0]):[0,0,0,0],wf=k[0]+k[2],p=u?past(u,AGO):null;
+  var cls='unit'+(live?' live':'')+(name===SEL?' sel':'')+(u?'':' none')+(wf?' wf':c?' bt':'')+(p!==null&&c>p?' up':'');
+  var h='<div class="'+cls+'" onclick="pick(\''+name+'\')"><div class="row"><span class="nm">'+esc(label||name)+'</span><span class="when'+(live?' on':'')+'">'+(live?'● 연결됨':u?ago(u.got):'')+'</span></div>';
+  if(!u)return h+'<div class="mix">아직 안 들름</div></div>';
+  h+='<div class="big">'+c+'<small>대</small>'+delta(c,p)+'</div>';
+  h+='<div class="mix">'+(c?(k[1]?'<span class="b">블루투스 '+k[1]+'</span> ':'')+(wf?'<span class="h">와이파이 '+wf+'</span> ':''):'감지 없음 ')+(p!==null?'· '+AGO+'분 전 '+p:'· '+AGO+'분 전 기록 없음')+'</div>';
+  var f=fresh(u),ch='';
+  f.slice(0,3).forEach(function(x){ch+='<span class="chip '+x[0]+'">＋ '+esc(x[1])+'</span>'});
+  if(f.length>3)ch+='<span class="chip m">외 '+(f.length-3)+'</span>';
+  if(ch)h+='<div class="chips">'+ch+'</div>';
+  return h+timeline(u)+'</div>';
+}
+function sum(names){
+  var c=0,p=0,n=0,pn=0;
+  names.forEach(function(x){var u=MEM[x];if(!u)return;n++;c+=cur(u);var q=past(u,AGO);if(q!==null){pn++;p+=q}});
+  return {c:c,p:pn?p:null,n:n};
+}
+function drawMap(){
+  var h='',known={},all=[];
+  GRADES.forEach(function(g){
+    var names=PAIRS.map(function(p){var n=uname(g,p);known[n]=1;all.push(n);return n});
+    function c(i){return VIEW==='name'?nrow(names[i],PAIRS[i]+'반'):cell(names[i],PAIRS[i]+'반')}
+    function side(lbl,a,b){var t=sum([names[a],names[b]]);
+      if(VIEW==='name')return c(a)+c(b);
+      return '<div class="fsum"><span>'+lbl+'</span><span>'+(t.n?'<b>'+t.c+'대</b>'+(t.p!==null?' · '+AGO+'분 전 '+t.p+'대':''):'아직 안 들름')+'</span></div><div class="side">'+c(a)+c(b)+'</div>'}
+    h+='<div class="floor"><div class="fl"><b>'+g+'학년</b></div>'+side('1 ~ 4반',0,1)+(VIEW==='name'?'':'<div class="yard">중정</div>')+side('5 ~ 8반',2,3)+'</div>';
+  });
+  var extra='';
+  Object.keys(MEM).sort().forEach(function(n){if(!known[n]&&/^[\w가-힣, -]+$/.test(n))extra+=cell(n)});
+  if(extra)h+='<div class="floor"><div class="fl"><b>기타</b></div><div class="side">'+extra+'</div></div>';
+  $('map').innerHTML=h;
+  var t=sum(all);
+  $('btot').className='bt1'+(t.c?' hit':'');
+  $('btot').innerHTML=t.n?'지금 '+t.c+'대'+(t.p!==null?' '+delta(t.c,t.p):''):'감지기에 들르면 채워집니다';
+  $('bsub').textContent=t.n?'들른 감지기 '+t.n+'/8'+(t.p!==null?' · '+AGO+'분 전 '+t.p+'대':''):'';
+  $('nall').textContent=t.c?'('+t.c+')':'';
+  [1,3,6].forEach(function(x){$('h'+x).className=x===HOURS?'on':''});
+  [5,10,30].forEach(function(x){$('a'+x).className=x===AGO?'on':''});
+  $('v-num').className=VIEW==='num'?'on':'';$('v-name').className=VIEW==='name'?'on':'';
+  drawEvents();
+}
+function setA(a){AGO=a;save();drawMap()}
+function evHtml(u){
+  var lim=Date.now()-HOURS*3600000,h='';
+  (u.events||[]).slice().reverse().forEach(function(e){
+    var a=abs(u,e[0]),b=abs(u,e[1]);if(b<lim)return;
+    var mins=Math.max(1,Math.round((e[1]-e[0])/60));
+    h+='<div class="ev"><span class="t">'+hm(a)+'</span><span><span class="k" style="background:var(--'+(e[2]==='hot'?'hot':e[2]==='sta'?'sta':'bt')+')"></span>'+esc(e[3])+
+       '<div class="sub">'+mins+'분 동안 · 가장 셀 때 '+e[4]+' dBm</div></span></div>';
+  });
+  return h||'<span class="sub">최근 '+HOURS+'시간 동안 감지 기록이 없습니다. (수집: '+ago(u.got)+')</span>';
+}
+function drawEvents(){
+  var u=MEM[SEL];$('selname').textContent=SEL||'-';
+  $('events').innerHTML=u?evHtml(u):'<span class="sub">이 감지기에는 아직 들르지 않았습니다.</span>';
+  var m=MEM[CUR];$('myname').textContent=CUR||'-';
+  $('myevents').innerHTML=m?evHtml(m):'<span class="sub">기록을 받아 오는 중입니다.</span>';
+}
+function tab(t){
+  TAB=t;['now','all','log','set'].forEach(function(x){$('t-'+x).className=x===t?'on':'';$('tb-'+x).className=(x===t?'on':'')+($('tb-'+x).dataset.al?' alert':'')});
+  save();
+}
+function setW(w){WIN=w;save();marks();if(S)show(S)}
+function marks(){[10,20,60].forEach(function(x){$('w'+x).className=x===WIN?'on':''})}
+function hash(t){var h=7;for(var i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))%3600;return h/10}
+function radar(s){
+  var h='';
+  function put(d,cls,key){
+    var r=6+Math.max(0,Math.min(1,(-40-d.r)/55))*41,a=hash(key)*Math.PI/180;
+    h+='<i class="blip '+(d.al?'al '+cls:'')+'" style="left:'+(50+r*Math.sin(a)).toFixed(1)+'%;top:'+(50-r*Math.cos(a)).toFixed(1)+'%"></i>';
+  }
+  (s.devs||[]).forEach(function(d){if(!d.b&&d.age<=WIN)put(d,'bt','b'+d.id)});
+  (s.wifi||[]).forEach(function(d){if(!d.b&&d.age<=75)put(d,'hot','w'+d.s)});
+  (s.sta||[]).forEach(function(d){if(!d.b&&d.age<=60)put(d,'sta','s'+d.id)});
+  $('blips').innerHTML=h;
+  var c=s.counts||[0,0,0,0],t=c[0]+c[1]+c[2]+c[3];
+  $('read').innerHTML=t?(c[1]?'<span class="b">블루투스 '+c[1]+'</span>':'')+(c[0]?'<span class="h">핫스팟 '+c[0]+'</span>':'')+(c[2]?'<span class="s">와이파이 켠 기기 '+c[2]+'</span>':'')+(c[3]?'<span>광대역 급증</span>':''):'<span class="z">탐색 중</span>';
+  $('radar').className='radar'+(s.learn>0?' learn':t?' hit':'');
+}
+function pick(n){SEL=n;drawMap()}
+function setH(h){HOURS=h;save();drawMap()}
+function wipe(){if(confirm('이 휴대 기기에 모아 둔 모든 감지기의 기록을 지울까요?')){MEM={};save();getH()}}
+var OPEN={};
+function tog(k,el){OPEN[k]=el.open}
+function card(x){
+  var pct=Math.max(0,Math.min(100,(x.r+100)*100/60));
+  return '<div class="card'+(x.al&&!x.gone?' al':'')+(x.gone?' gone':'')+'"><div class="row"><div><b><span class="k" style="background:var(--'+x.c+')"></span>'+x.t+'</b><div class="sub">'+x.s+' · '+(x.age<3?'방금':x.age+'초 전')+'</div></div><div style="text-align:right">'+
+    '<span class="tag'+(x.tag==='감지'?' bad':'')+'">'+x.tag+'</span><div class="r">'+x.r+' dBm</div></div></div><div class="bar"><i style="width:'+pct+'%"></i></div></div>';
+}
+function grp(key,title,list){
+  if(!list.length)return '';
+  return '<details class="grp"'+(OPEN[key]?' open':'')+' ontoggle="tog(\''+key+'\',this)"><summary>'+title+' '+list.length+'개</summary>'+list.map(card).join('')+'</details>';
+}
+function lists(s){
+  // 지금 잡히는 것과 조금 전까지 잡히던 것을 나눈다. 와이파이는 훑는 간격이 길어 기준 시간을 길게 둔다.
+  var all=[];
+  (s.devs||[]).forEach(function(d){all.push({c:'bt',t:esc(d.k||'종류 모름')+(d.n?' · '+esc(d.n):''),s:'블루투스 #'+d.id,r:d.r,age:d.age,al:d.al,b:d.b,strong:d.r>=s.th,win:WIN})});
+  (s.wifi||[]).forEach(function(d){all.push({c:'hot',t:esc(d.s),s:esc(d.k)+' · 채널 '+d.ch,r:d.r,age:d.age,al:d.al,b:d.b,strong:d.al,win:Math.max(75,WIN)})});
+  (s.sta||[]).forEach(function(d){all.push({c:'sta',t:esc(d.k),s:'와이파이 #'+d.id+' · 채널 '+d.ch,r:d.r,age:d.age,al:d.al,b:d.b,strong:d.al,win:Math.max(60,WIN)})});
+  var near=[],weak=[],gone=[],base=[];
+  all.forEach(function(x){
+    if(x.b){x.tag='기준 기기';base.push(x)}
+    else if(x.age>x.win){x.gone=true;x.tag=x.al?'사라짐 · 불은 아직 켜짐':'사라짐';gone.push(x)}
+    else if(x.al||x.strong){x.tag=x.al?'감지':'확인 중';near.push(x)}
+    else{x.tag='약함';weak.push(x)}
+  });
+  function by(a,b){return (b.al-a.al)||(b.r-a.r)}
+  near.sort(by);weak.sort(by);gone.sort(function(a,b){return a.age-b.age});
+  $('near').innerHTML=near.map(card).join('')||'<div class="card sub">지금 가까이에서 잡히는 기기가 없습니다.</div>';
+  $('gone').innerHTML=gone.map(card).join('')||'<div class="card sub">최근 3분 안에 사라진 기기가 없습니다.</div>';
+  $('groups').innerHTML=(grp('weak','지금 잡히지만 약한 신호',weak)+grp('base','기준 기기 (감지에서 뺀 것)',base))||'<div class="card sub">없습니다.</div>';
+  $('nnow').textContent=near.length?'('+near.length+')':'';
+  $('nlog').textContent=gone.length?'('+gone.length+')':'';
+  var al=near.some(function(x){return x.al});
+  $('tb-now').dataset.al=al?'1':'';$('tb-now').className=(TAB==='now'?'on':'')+(al?' alert':'');
+  $('wnote').textContent=s.wok===false?'핫스팟 탐지가 동작하지 않습니다. 블루투스만 감지 중입니다.':s.wok===null&&s.sniff===null?'핫스팟 탐지: 첫 훑기를 기다리는 중입니다.':s.sniff===null?'핫스팟 탐지 동작 중. 화면을 보는 동안에는 1분에 한 번 훑으며 그때 2~3초 멈춥니다.':'';
+  $('snote').textContent=s.sniff===false?'와이파이 청취기(ESP32)에서 신호가 오지 않습니다. 노란 선과 흰 선을 서로 바꿔 꽂아 보세요.':'';
+}
+function show(s){
+  S=s;$('err').textContent='';$('unit').textContent=s.unit;
+  if(CUR!==s.unit){CUR=s.unit;if(!SEL||!MEM[SEL])SEL=CUR;getH()}
+  $('th').textContent=s.th;$('base').textContent=s.base;
+  var b=$('banner');
+  if(s.learn>0){b.className='st learn';b.textContent=s.unit+' · 기준 측정 중 '+s.learn+'초'}
+  else if(s.alerts>0){b.className='st hit';b.textContent=s.unit+' · 감지됨 '+s.alerts+'건'}
+  else{b.className='st';b.textContent=s.unit+' · 감지된 기기 없음'}
+  radar(s);
+  lists(s);
+  if(s.rf){$('rfbox').style.display='';$('rfcard').className='card'+(s.rf.al?' al':'');
+    $('rfcard').innerHTML='<b>광대역 전파 지금 '+s.rf.cur+' dBm</b><div class="sub">평소 '+s.rf.floor+' dBm · 최근 1분 급증 '+s.rf.n+'회 (추정값)</div>'}
+  else $('rfbox').style.display='none';
+  if(MEM[CUR]){var o=JSON.stringify(MEM[CUR].counts);MEM[CUR].counts=s.counts;if(o!==JSON.stringify(s.counts)&&TAB==='all')drawMap()}
+}
+function get(u){
+  fetch(u,{cache:'no-store'}).then(function(r){return r.json()}).then(show)
+  .catch(function(){$('err').textContent='감지기와 연결이 끊겼습니다. 와이파이가 감지기 것인지 확인하세요.';CUR=null;drawMap()});
+}
+function getH(){
+  fetch('/h',{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+    d.got=Date.now();MEM[d.unit]=d;if(!SEL)SEL=d.unit;save();drawMap();
+  }).catch(function(){drawMap()});
+}
+function th(d){if(S)get('/cmd?th='+(S.th+d))}
+function learn(){if(confirm('교실이 비어 있나요? 60초 동안 주변의 고정 기기를 기준으로 기록합니다.'))get('/cmd?learn=1')}
+function clearBase(){if(confirm('기준 기기 기록을 지울까요?'))get('/cmd?clearbase=1')}
+load();tab(TAB);marks();drawMap();get('/s');
+setInterval(function(){get('/s')},2000);setInterval(getH,20000);
+</script>
+</body>
+</html>
