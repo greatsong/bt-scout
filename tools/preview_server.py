@@ -10,7 +10,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "firmware")
 sys.path.insert(0, ROOT)
-from detect import History, RfWatch, StaWatch, Tracker, WifiTracker  # noqa: E402
+import math  # noqa: E402
+from detect import History, Hunt, RfWatch, StaWatch, Tracker, WifiTracker  # noqa: E402
 
 UNIT = os.environ.get('UNIT', '1학년 1,2반')
 QUIET = os.environ.get('QUIET') == '1'   # 1이면 가까운 가상 기기가 없는 조용한 감지기
@@ -28,6 +29,7 @@ tr = Tracker()
 wt = WifiTracker()
 st = StaWatch()
 rf = RfWatch()
+hunt = Hunt()
 STAS = [(bytes([0x3A, 9, 9, 9, 0x51, 0xEE]), -61, 'P', 6), (bytes([0x00, 9, 9, 9, 0x10, 0x02]), -57, 'D', 1),
         (bytes([0x9E, 9, 9, 9, 0x44, 0x0B]), -84, 'P', 11)]
 WIFI = [(b'AndroidAP_7731', bytes([0x7A, 1, 2, 3, 4, 5]), 6, -55, 3, 0),
@@ -69,7 +71,14 @@ class H(BaseHTTPRequestHandler):
         if path == "/cmd":
             for part in query.split("&"):
                 k, _, v = part.partition("=")
-                if k == "th":
+                if k in ("hunt", "whunt"):
+                    if v == "off":
+                        hunt.stop()
+                    else:
+                        hunt.start(now, bytes.fromhex(v), k == "whunt", "가상 기기")
+                elif k == "peak":
+                    hunt.clear_peak()
+                elif k == "th":
                     tr.rssi_min = int(v)
                 elif k == "learn":
                     tr.start_learning(now, 60)
@@ -79,7 +88,13 @@ class H(BaseHTTPRequestHandler):
                     tr.base = set()
                     wt.base = set()
                     st.base = set()
-        if path == "/h":
+        ms = int(time.time() * 1000)
+        if hunt.active(now):   # 가까워졌다 멀어지는 가상 신호
+            hunt.feed(ms, int(-62 + 24 * math.sin(time.time() / 6) + (ms % 7) - 3))
+        if path == "/t":
+            body = json.dumps(hunt.status(now, ms)).encode()
+            ctype = "application/json"
+        elif path == "/h":
             d = hist.dump(now)
             d.update(unit=UNIT, counts=[wt.alert_count(now), tr.alert_count(now), st.alert_count(now), 0])
             body = json.dumps(d).encode()
@@ -89,7 +104,7 @@ class H(BaseHTTPRequestHandler):
                 "unit": UNIT, "alerts": tr.alert_count(now) + wt.alert_count(now) + st.alert_count(now), "wok": True,
                 "sniff": True, "sta": st.snapshot(now), "rf": rf.status(now), "wifi": wt.snapshot(now),
                 "th": tr.rssi_min, "counts": [wt.alert_count(now), tr.alert_count(now), st.alert_count(now), 0], "base": len(tr.base) + len(wt.base) + len(st.base),
-                "learn": tr.learning_left(now), "total": len(tr.devs), "devs": tr.snapshot(now),
+                "learn": tr.learning_left(now), "hunt": hunt.active(now), "total": len(tr.devs), "devs": tr.snapshot(now),
             }).encode()
             ctype = "application/json"
         else:

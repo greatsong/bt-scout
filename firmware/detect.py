@@ -179,6 +179,7 @@ class Tracker:
         for a, d in self.devs.items():
             rows.append({
                 "id": "%02X%02X" % (a[-2], a[-1]),
+                "a": "".join("%02x" % x for x in a),
                 "k": d[_KIND],
                 "n": d[_NAME],
                 "r": d[_RSSI],
@@ -264,6 +265,7 @@ class WifiTracker:
                 continue
             rows.append({
                 "s": d[0] or "(이름 숨김)",
+                "a": "".join("%02x" % x for x in b),
                 "k": self._kind(b, d[0]),
                 "r": d[1],
                 "ch": d[2],
@@ -504,3 +506,107 @@ def limit_current(frame, max_ma, ma_per_channel=16):
         return frame
     k = max_ma / ma
     return [(int(r * k), int(g * k), int(b * k)) for r, g, b in frame]
+
+
+# ---------- 정밀 탐색: 고른 기기 하나의 신호 세기를 빠르게 따라간다 ----------
+class Hunt:
+    """감지기를 손에 들고 다니며 신호가 나오는 곳을 좁혀 갈 때 쓴다.
+
+    신호 세기는 한 번 한 번이 크게 흔들리므로 최근 값 몇 개의 가운데 값을 쓴다.
+    시각은 초(now)와 밀리초(ms) 두 가지를 쓴다. ms는 끊김을 빨리 알아채려는 것이다.
+    """
+
+    LOW, HIGH = -90, -35      # 눈금 0칸과 10칸에 해당하는 세기(dBm)
+
+    def __init__(self, secs=300, keep=8):
+        self.secs = secs      # 시작한 뒤 이만큼(초) 지나면 스스로 끝난다
+        self.keep = keep
+        self.addr = None
+        self.stop()
+
+    def start(self, now, addr, wifi=False, label=""):
+        self.addr = addr
+        self.wifi = wifi      # True면 핫스팟(와이파이). 2~3초에 한 번만 값이 온다
+        self.label = label
+        self.until = now + self.secs
+        self.buf = []
+        self.peak = None
+        self.last = None
+        self.n = 0
+
+    def stop(self):
+        self.addr = None
+        self.wifi = False
+        self.label = ""
+        self.until = 0
+        self.buf = []
+        self.peak = None
+        self.last = None
+        self.n = 0
+
+    def active(self, now):
+        return self.addr is not None and now < self.until
+
+    def feed(self, ms, rssi):
+        self.buf.append(rssi)
+        if len(self.buf) > (2 if self.wifi else self.keep):
+            self.buf.pop(0)
+        self.last = ms
+        self.n += 1
+        lv = self.level()
+        if self.peak is None or lv > self.peak:
+            self.peak = lv
+
+    def level(self):
+        """최근 값들의 가운데 값. 아직 없으면 None"""
+        if not self.buf:
+            return None
+        b = sorted(self.buf)
+        return b[len(b) // 2]
+
+    def clear_peak(self):
+        self.peak = self.level()
+
+    def age_ms(self, ms):
+        """마지막으로 잡힌 뒤 지난 시간(밀리초). 한 번도 안 잡혔으면 None"""
+        if self.last is None:
+            return None
+        return max(0, ms - self.last)
+
+    def lost(self, ms):
+        a = self.age_ms(ms)
+        return a is None or a > (9000 if self.wifi else 3000)
+
+    def bars(self, ms, n=10):
+        """세기를 0~n칸으로. 신호가 끊겼으면 0"""
+        lv = self.level()
+        if lv is None or self.lost(ms):
+            return 0
+        k = (lv - self.LOW) * n // (self.HIGH - self.LOW)
+        return max(1, min(n, k))
+
+    def status(self, now, ms):
+        if not self.active(now):
+            return {"on": False}
+        return {
+            "on": True,
+            "a": "".join("%02x" % x for x in self.addr),
+            "w": self.wifi,
+            "label": self.label,
+            "r": self.level(),
+            "raw": self.buf[-1] if self.buf else None,
+            "pk": self.peak,
+            "age": self.age_ms(ms),
+            "lost": self.lost(ms),
+            "bars": self.bars(ms),
+            "n": self.n,
+            "left": self.until - now,
+        }
+
+
+def hunt_frame(bars, tick, lost=False, n=10, bright=40):
+    """정밀 탐색 중의 LED: 신호가 셀수록 노란 칸이 많이 켜진다. 끊기면 첫 칸만 깜박인다."""
+    y = (bright, bright * 2 // 3, 0)
+    if lost or bars <= 0:
+        return [y if tick % 6 < 3 else LED_OFF] + [LED_OFF] * (n - 1)
+    return [y] * min(n, bars) + [LED_OFF] * (n - min(n, bars))

@@ -12,8 +12,8 @@ import network
 from machine import ADC, Pin, UART, WDT
 
 import config
-from detect import (History, RfWatch, StaWatch, Tracker, WifiTracker,
-                    expand_frame, led_frame, limit_current)
+from detect import (History, Hunt, RfWatch, StaWatch, Tracker, WifiTracker,
+                    expand_frame, hunt_frame, led_frame, limit_current)
 
 SETTINGS = "settings.json"
 
@@ -36,7 +36,8 @@ wt = WifiTracker(rssi_min=config.WIFI_RSSI_MIN, skip_prefix=config.AP_SSID)
 st = StaWatch(rssi_min=config.STA_RSSI_MIN)
 rf = RfWatch(delta=config.RF_DELTA)
 hist = History(hours=config.HISTORY_HOURS)
-state = {"scan_done": False, "wok": None, "sn_last": None, "own": b""}
+hunt = Hunt(secs=config.HUNT_SECS)
+state = {"scan_done": False, "wok": None, "sn_last": None, "own": b"", "hmode": False}
 
 
 def log_error(where, e):
@@ -102,7 +103,10 @@ ble = bluetooth.BLE()
 def ble_irq(event, data):
     if event == 5:  # 광고 수신
         atype, addr, adv_type, rssi, adv = data
-        tr.seen(time.time(), atype, bytes(addr), rssi, bytes(adv))
+        a = bytes(addr)
+        tr.seen(time.time(), atype, a, rssi, bytes(adv))
+        if a == hunt.addr and not hunt.wifi:
+            hunt.feed(time.ticks_ms(), rssi)
     elif event == 6:  # 스캔 종료
         state["scan_done"] = True
 
@@ -111,7 +115,11 @@ def start_scan():
     state["scan_done"] = False
     # 끝없이 스캔. 블루투스와 와이파이가 안테나 하나를 나눠 쓰므로, 듣는 시간을 줄여
     # 확인용 와이파이가 휴대전화의 접속 요청에 답할 틈을 준다.
-    ble.gap_scan(0, config.BLE_INTERVAL_MS * 1000, config.BLE_WINDOW_MS * 1000, config.BLE_ACTIVE)
+    if state["hmode"] and not hunt.wifi:
+        # 정밀 탐색 중에는 고른 기기의 신호를 놓치지 않게 훨씬 자주 듣는다.
+        ble.gap_scan(0, config.HUNT_INTERVAL_MS * 1000, config.HUNT_WINDOW_MS * 1000, False)
+    else:
+        ble.gap_scan(0, config.BLE_INTERVAL_MS * 1000, config.BLE_WINDOW_MS * 1000, config.BLE_ACTIVE)
 
 
 # ---------- 확인용 와이파이 ----------
@@ -160,6 +168,7 @@ def status_json():
         "th": tr.rssi_min,
         "base": len(tr.base) + len(wt.base) + len(st.base),
         "learn": tr.learning_left(now),
+        "hunt": hunt.active(now),
         "total": len(tr.devs),
         "devs": tr.snapshot(now, 30),
     })
@@ -186,10 +195,28 @@ def record(now):
         hist.note(now, "sta", "sta", "와이파이를 켠 기기", config.STA_RSSI_MIN)
 
 
+def hunt_label(addr, wifi):
+    if wifi:
+        d = wt.nets.get(addr)
+        return (d[0] or "(이름 숨김)") if d else "와이파이 신호"
+    d = tr.devs.get(addr)
+    if not d:
+        return "블루투스 기기"
+    return (d[1] or "종류 모름") + (" · " + d[2] if d[2] else "")
+
+
 def command(query):
     for part in query.split("&"):
         k, _, v = part.partition("=")
-        if k == "th":
+        if k in ("hunt", "whunt"):
+            if v == "off":
+                hunt.stop()
+            else:
+                addr = bytes.fromhex(v)
+                hunt.start(time.time(), addr, k == "whunt", hunt_label(addr, k == "whunt"))
+        elif k == "peak":
+            hunt.clear_peak()
+        elif k == "th":
             tr.rssi_min = max(-95, min(-40, int(v)))
             save_settings()
         elif k == "learn":
@@ -214,7 +241,7 @@ async def handle(reader, writer):
         state["last_req"] = time.time()
         target = line.split()[1].decode()
         path, _, query = target.partition("?")
-        if path != "/s" or not state.get("seen_s"):
+        if path != "/t" and (path != "/s" or not state.get("seen_s")):
             print("요청 받음:", target)      # 휴대전화의 요청이 피코까지 왔다는 표시
             if path == "/s":
                 state["seen_s"] = True
@@ -223,6 +250,9 @@ async def handle(reader, writer):
             ctype = "application/json"
         elif path == "/h":
             body = history_json()
+            ctype = "application/json"
+        elif path == "/t":
+            body = json.dumps(hunt.status(time.time(), time.ticks_ms()))
             ctype = "application/json"
         elif path == "/cmd":
             command(query)
@@ -310,12 +340,21 @@ async def wifi_watch():
         now = time.time()
         viewing = now - state.get("last_req", -999) < 15
         gap = 5 if learning() else config.WIFI_EVERY_VIEWING if viewing else config.WIFI_EVERY
+        hunting = hunt.active(now)
+        if hunting:
+            # 블루투스 기기를 찾는 동안에는 훑지 않는다. 핫스팟을 찾는 동안에는 쉬지 않고 훑는다.
+            gap = 3 if hunt.wifi else 99999
         if now - last >= gap:
             last = now
             try:
                 found = sta.scan()
                 wt.scan_result(time.time(), found, learning())
                 state["wok"] = True
+                if hunting and hunt.wifi:
+                    for r in found:
+                        if bytes(r[1]) == hunt.addr:
+                            hunt.feed(time.ticks_ms(), r[3])
+                            break
                 if first:
                     first = False
                     print("핫스팟 첫 훑기 끝. 주변 와이파이", len(found), "개")
@@ -365,6 +404,20 @@ async def indicator():
             # 표시는 항상 10칸으로 만들고, LED 개수에 맞게 늘린다(60개면 한 칸이 LED 6개).
             frame = led_frame(n_hot, n_bt, n_sta, n_rf, tick, learn, warn,
                               10, config.LED_BRIGHT)
+            hmode = hunt.active(now)
+            if hmode != state["hmode"]:
+                # 정밀 탐색을 시작하거나 끝낼 때 블루투스 듣는 주기를 바꿔 다시 시작한다.
+                state["hmode"] = hmode
+                if not hmode:
+                    hunt.stop()
+                try:
+                    ble.gap_scan(None)
+                except Exception:
+                    pass
+                state["scan_done"] = True
+            if hmode:
+                ms = time.ticks_ms()
+                frame = hunt_frame(hunt.bars(ms), tick, hunt.lost(ms), 10, config.LED_BRIGHT)
             if STICK and frame != shown:
                 full = limit_current(expand_frame(frame, config.LED_COUNT), config.LED_MAX_MA)
                 for i in range(config.LED_COUNT):
@@ -373,6 +426,8 @@ async def indicator():
                 shown = frame
             # LED 하나: 정상은 3초마다 짧게, 감지는 계속 켜짐, 기준 측정 중은 빠르게 깜박임
             one = (tick % 2) if learn else 1 if (n_hot + n_bt + n_sta + n_rf) else (1 if tick % 30 == 0 else 0)
+            if hmode:   # 정밀 탐색: 신호가 셀수록 빠르게 깜박인다
+                one = 1 if tick % (12 - hunt.bars(ms)) == 0 else 0
             if not STICK:
                 led_one.value(one)
             if led_board is not None:

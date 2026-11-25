@@ -3,7 +3,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "firmware"))
-from detect import History, RfWatch, expand_frame, limit_current, StaWatch, Tracker, WifiTracker, is_fixed, led_frame, parse  # noqa: E402
+from detect import History, Hunt, hunt_frame, RfWatch, expand_frame, limit_current, StaWatch, Tracker, WifiTracker, is_fixed, led_frame, parse  # noqa: E402
 
 IPHONE = bytes([2, 1, 0x1A, 7, 0xFF, 0x4C, 0x00, 0x10, 0x03, 1, 2, 3])
 AIRPODS = bytes([6, 0xFF, 0x4C, 0x00, 0x07, 0x01, 0x00])
@@ -253,6 +253,44 @@ class LedSizeTest(unittest.TestCase):
         self.assertGreater(ma, 200)
         dim = [(0, 0, 40)] * 10
         self.assertEqual(limit_current(dim, 250), dim)
+
+
+class HuntTest(unittest.TestCase):
+    def test_follows_one_device(self):
+        h = Hunt(secs=300)
+        self.assertFalse(h.active(0))
+        h.start(100, b"\x01\x02\x03\x04\x05\x06", label="이어폰")
+        self.assertTrue(h.active(100))
+        self.assertTrue(h.lost(0))                  # 아직 한 번도 안 잡힘
+        for i, r in enumerate((-70, -72, -40, -71, -69)):   # -40 하나는 튄 값
+            h.feed(1000 + i * 100, r)
+        self.assertEqual(h.level(), -70)            # 가운데 값이라 튄 값에 끌려가지 않는다
+        self.assertFalse(h.lost(1500))
+        self.assertTrue(h.lost(1400 + 3001))        # 3초 넘게 안 잡히면 끊김
+        self.assertEqual(h.bars(1400 + 3001), 0)
+        self.assertFalse(h.active(100 + 300))       # 5분 뒤 스스로 끝남
+
+    def test_closer_means_more_bars(self):
+        far, near = Hunt(), Hunt()
+        far.start(0, b"a")
+        near.start(0, b"a")
+        for i in range(8):
+            far.feed(i, -85)
+            near.feed(i, -40)
+        self.assertLess(far.bars(10), near.bars(10))
+        self.assertEqual(near.peak, -40)
+        st = near.status(1, 10)
+        self.assertTrue(st["on"])
+        self.assertEqual(st["r"], -40)
+        near.stop()
+        self.assertEqual(near.status(1, 10), {"on": False})
+
+    def test_led_meter(self):
+        f = hunt_frame(4, 0, False, 10, 40)
+        self.assertEqual(sum(1 for c in f if c != (0, 0, 0)), 4)
+        lost = hunt_frame(0, 0, True, 10, 40)
+        self.assertEqual(sum(1 for c in lost if c != (0, 0, 0)), 1)
+        self.assertEqual(sum(1 for c in hunt_frame(0, 3, True, 10, 40) if c != (0, 0, 0)), 0)
 
 
 if __name__ == "__main__":

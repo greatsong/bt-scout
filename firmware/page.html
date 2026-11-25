@@ -127,6 +127,21 @@ details.grp .card{background:var(--bg)}
 .care li{counter-increment:c;position:relative;padding:5px 0 5px 34px;color:var(--ink);font-size:14.5px}
 .care li:before{content:counter(c);position:absolute;left:0;top:5px;width:23px;height:23px;border-radius:50%;background:#e0b64a;color:#2b2000;font-weight:700;font-size:13px;text-align:center;line-height:23px}
 .care li b{color:var(--wait)}
+.hbig{text-align:center;font-size:64px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;color:#ffe27a}
+.hbig small{font-size:18px;font-weight:600;margin-left:4px;color:#7fae95}
+.hbig.lost{color:#5f7a6c}
+.hseg{display:flex;gap:4px;margin:12px 4px 8px}
+.hseg i{flex:1;height:34px;border-radius:5px;background:#12301f}
+.hseg i.on{background:#ffd24a;box-shadow:0 0 10px rgba(255,210,74,.55)}
+.hseg i.on.near{background:#ff8f5a;box-shadow:0 0 12px rgba(255,143,90,.7)}
+.htrend{text-align:center;font-size:17px;font-weight:700;min-height:26px}
+.hmeta{display:flex;justify-content:center;gap:14px;font-size:13px;color:#7fae95;flex-wrap:wrap;margin-top:4px}
+.hbtn{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.hbtn button{background:transparent;border-color:#1f6b45;color:#bfe9d0}
+.hbtn button.main{background:#ffd24a;border-color:#ffd24a;color:#2b2000;font-weight:700}
+.mk{display:flex;justify-content:space-between;padding:6px 2px;border-bottom:1px solid var(--line)}
+.mk.top{font-weight:800;color:var(--bad)}
+.pickrow{display:flex;justify-content:space-between;align-items:center;gap:10px}
 @media(prefers-reduced-motion:reduce){.sweep,.blip.al:after{animation:none}}
 </style>
 </head>
@@ -136,6 +151,7 @@ details.grp .card{background:var(--bg)}
 <nav class="tabs">
   <button id="tb-now" onclick="tab('now')">레이더<span id="nnow"></span></button>
   <button id="tb-all" onclick="tab('all')">건물<span id="nall"></span></button>
+  <button id="tb-hunt" onclick="tab('hunt')">탐색</button>
   <button id="tb-log" onclick="tab('log')">로그<span id="nlog"></span></button>
   <button id="tb-set" onclick="tab('set')">설정</button>
 </nav>
@@ -160,11 +176,41 @@ details.grp .card{background:var(--bg)}
 <div id="rfbox" style="display:none"><div class="card" id="rfcard"></div></div>
 <div class="care"><b>확인하기 전에</b><ol>
   <li>이 기기의 <b>블루투스를 끄고</b> 보세요. 켜져 있으면 이 기기가 감지됩니다.</li>
-  <li><b>기준 측정</b>은 학생이 없는 <b>빈 교실</b>에서만 누르세요.</li>
+  <li><b>기준 측정</b>은 살펴볼 기기가 없는 <b>빈 교실</b>에서만 누르세요.</li>
   <li>초록(감지 없음)이어도 <b>기기가 없다는 뜻은 아닙니다.</b> 꺼진 기기와 이동통신만 쓰는 기기는 보이지 않습니다.</li>
-  <li>감지되어도 <b>부정행위라는 뜻은 아닙니다.</b> 교실에서 직접 확인한 뒤 판단하세요.</li>
+  <li>감지되어도 <b>누구의 기기인지는 알 수 없습니다.</b> 이 화면만으로 사람을 판단하지 마세요.</li>
 </ol></div>
 
+</section>
+
+<section id="t-hunt">
+<div id="hon" style="display:none">
+<div class="scope">
+  <div class="st" id="hname">-</div>
+  <div class="hbig" id="hval">-<small>dBm</small></div>
+  <div class="hseg" id="hseg"></div>
+  <div class="htrend" id="htrend"></div>
+  <div class="hmeta"><span>최고 <b id="hpk">-</b></span><span>받은 신호 <b id="hn">0</b>개</span><span>남은 시간 <b id="hleft">-</b></span></div>
+  <div class="hbtn"><button class="main" onclick="mark()">이 자리 기록</button><button id="hsnd" onclick="sound()">소리 켜기</button><button onclick="hcmd('peak=1')">최고값 지우기</button><button onclick="huntStop()">끝내기</button></div>
+</div>
+<h2>자리별 기록 (센 순서)</h2>
+<div class="card" id="marks"></div>
+<div class="care"><b>찾는 요령</b><ol>
+  <li>감지기를 살펴볼 곳에 <b>한 뼘 안쪽</b>까지 대고 <b>2초</b>쯤 멈춥니다. 빨리 지나가면 값이 따라오지 못합니다.</li>
+  <li>감지기를 <b>늘 같은 방향</b>으로 듭니다. 방향을 바꾸면 같은 자리에서도 값이 달라집니다.</li>
+  <li>값은 한 번 한 번이 <b>5 dBm쯤 흔들립니다.</b> 한 곳으로 정하지 말고 가장 센 두세 곳으로 좁힌 뒤 다시 재세요.</li>
+  <li>신호가 끊기면 기기가 <b>주소를 바꾼 것</b>일 수 있습니다. 끝내고 목록에서 가장 센 것을 다시 고르세요.</li>
+</ol></div>
+</div>
+<div id="hoff">
+<div class="card"><b>정밀 탐색</b>
+  <div class="sub">기기 하나를 골라 그 신호 세기만 빠르게 따라갑니다. 감지기를 들고 다니면 가까워질수록 숫자가 커지고 LED 칸이 늘어납니다. 탐색하는 동안(최대 5분) 다른 기기의 감지는 느려집니다.</div></div>
+<h2>블루투스 기기 (센 순서)</h2>
+<div id="hbt"></div>
+<h2>와이파이 신호</h2>
+<div id="hwf"></div>
+<div class="sub">와이파이(핫스팟)는 값이 3초에 한 번쯤만 바뀌고, 그동안 화면이 자주 멈춥니다. 한 자리에 5초 이상 머물러야 합니다.</div>
+</div>
 </section>
 
 <section id="t-log">
@@ -206,7 +252,7 @@ details.grp .card{background:var(--bg)}
 <div class="card">
   <div class="ctl"><span>기준 기기 <b id="base">0</b>대</span>
   <button onclick="learn()">기준 측정 (60초)</button><button onclick="clearBase()">기준 지우기</button></div>
-  <div class="sub">학생이 들어오기 전 빈 교실일 때만 누릅니다. 늘 켜져 있는 기기와 주변 공유기를 감지에서 뺍니다.</div>
+  <div class="sub">사람이 들어오기 전 빈 교실일 때만 누릅니다. 늘 켜져 있는 기기와 주변 공유기를 감지에서 뺍니다.</div>
 </div>
 <div class="card">
   <div class="ctl"><button onclick="wipe()">이 화면에 모아 둔 기록 지우기</button></div>
@@ -347,7 +393,7 @@ function drawEvents(){
   $('myevents').innerHTML=m?evHtml(m):'<span class="sub">기록을 받아 오는 중입니다.</span>';
 }
 function tab(t){
-  TAB=t;['now','all','log','set'].forEach(function(x){$('t-'+x).className=x===t?'on':'';$('tb-'+x).className=(x===t?'on':'')+($('tb-'+x).dataset.al?' alert':'')});
+  TAB=t;['now','all','hunt','log','set'].forEach(function(x){$('t-'+x).className=x===t?'on':'';$('tb-'+x).className=(x===t?'on':'')+($('tb-'+x).dataset.al?' alert':'')});
   save();
 }
 function setW(w){WIN=w;save();marks();if(S)show(S)}
@@ -416,6 +462,8 @@ function show(s){
   else{b.className='st';b.textContent=s.unit+' · 감지된 기기 없음'}
   radar(s);
   lists(s);
+  if(s.hunt&&!HUNT)huntPoll();
+  if(!HUNT)drawPick();
   if(s.rf){$('rfbox').style.display='';$('rfcard').className='card'+(s.rf.al?' al':'');
     $('rfcard').innerHTML='<b>광대역 전파 지금 '+s.rf.cur+' dBm</b><div class="sub">평소 '+s.rf.floor+' dBm · 최근 1분 급증 '+s.rf.n+'회 (추정값)</div>'}
   else $('rfbox').style.display='none';
@@ -433,8 +481,66 @@ function getH(){
 function th(d){if(S)get('/cmd?th='+(S.th+d))}
 function learn(){if(confirm('교실이 비어 있나요? 60초 동안 주변의 고정 기기를 기준으로 기록합니다.'))get('/cmd?learn=1')}
 function clearBase(){if(confirm('기준 기기 기록을 지울까요?'))get('/cmd?clearbase=1')}
-load();tab(TAB);marks();drawMap();get('/s');
-setInterval(function(){get('/s')},2000);setInterval(getH,20000);
+// ---------- 정밀 탐색 ----------
+var HUNT=null,HS=[],MARKS=[],SND=false,AC=null;
+function hcmd(q){return fetch('/cmd?'+q,{cache:'no-store'}).then(function(r){return r.json()}).catch(function(){})}
+function huntStart(a,w){MARKS=[];HS=[];drawMarks();hcmd((w?'whunt=':'hunt=')+a).then(huntPoll)}
+function huntStop(){hcmd('hunt=off').then(function(){HUNT=null;drawHunt();get('/s')})}
+function huntPoll(){
+  fetch('/t',{cache:'no-store'}).then(function(r){return r.json()}).then(function(h){
+    HUNT=h.on?h:null;
+    if(HUNT&&h.r!=null&&!h.lost){HS.push([Date.now(),h.r]);while(HS.length&&Date.now()-HS[0][0]>4000)HS.shift()}
+    drawHunt();
+  }).catch(function(){});
+}
+function recent(ms){var now=Date.now(),m=null;HS.forEach(function(x){if(now-x[0]<=ms&&(m===null||x[1]>m))m=x[1]});return m}
+function drawHunt(){
+  $('hon').style.display=HUNT?'':'none';$('hoff').style.display=HUNT?'none':'';
+  if(!HUNT){drawPick();return}
+  var h=HUNT;$('hname').textContent=(h.w?'와이파이 · ':'블루투스 · ')+h.label;
+  $('hval').className='hbig'+(h.lost?' lost':'');
+  $('hval').innerHTML=(h.r==null?'-':h.r)+'<small>dBm</small>';
+  var t='';for(var i=0;i<10;i++)t+='<i class="'+(i<h.bars?'on'+(h.bars>=8?' near':''):'')+'"></i>';$('hseg').innerHTML=t;
+  var tr='';
+  if(h.n===0)tr='신호를 기다리는 중';
+  else if(h.lost)tr='신호가 끊겼습니다 ('+Math.round(h.age/1000)+'초째)';
+  else{var old=null,now=Date.now();HS.forEach(function(x){if(old===null&&now-x[0]<=2600)old=x[1]});
+    var d=old===null?0:h.r-old;tr=d>=4?'▲ 가까워지는 중':d<=-4?'▼ 멀어지는 중':h.bars>=8?'아주 가까움':'비슷함'}
+  $('htrend').textContent=tr;
+  $('hpk').textContent=h.pk==null?'-':h.pk+' dBm';$('hn').textContent=h.n;
+  $('hleft').textContent=Math.floor(h.left/60)+'분 '+(h.left%60)+'초';
+}
+function mark(){var v=recent(2000);if(v===null)return;MARKS.push({n:MARKS.length+1,r:v});drawMarks()}
+function drawMarks(){
+  if(!MARKS.length){$('marks').innerHTML='<span class="sub">감지기를 한 자리에 2초쯤 댄 뒤 "이 자리 기록"을 누르세요. 누른 순서대로 1번, 2번 자리가 됩니다.</span>';return}
+  var m=MARKS.slice().sort(function(a,b){return b.r-a.r}),top=m[0].r;
+  $('marks').innerHTML=m.map(function(x){return '<div class="mk'+(top-x.r<=5?' top':'')+'"><span>'+x.n+'번 자리</span><span class="r">'+x.r+' dBm</span></div>'}).join('')
+    +'<div class="sub" style="margin-top:6px">가장 센 값과 5 dBm 안쪽인 자리는 서로 구분되지 않습니다. 굵게 표시된 자리를 다시 재 보세요.</div>';
+}
+function drawPick(){
+  if(!S||HUNT)return;
+  var d=(S.devs||[]).filter(function(x){return x.age<=Math.max(WIN,20)&&!x.b}).sort(function(a,b){return b.r-a.r}).slice(0,12);
+  $('hbt').innerHTML=d.length?d.map(function(x){return '<div class="card pickrow"><div><b>'+esc(x.k||'종류 모름')+'</b>'+(x.n?' · '+esc(x.n):'')+'<div class="sub">'+x.id+' · '+x.r+' dBm</div></div><button onclick="huntStart(\''+x.a+'\',0)">찾기</button></div>'}).join(''):'<div class="card"><span class="sub">지금 잡히는 블루투스 기기가 없습니다.</span></div>';
+  var w=(S.wifi||[]).filter(function(x){return x.age<=90&&!x.b}).sort(function(a,b){return b.r-a.r}).slice(0,8);
+  $('hwf').innerHTML=w.length?w.map(function(x){return '<div class="card pickrow"><div><b>'+esc(x.s)+'</b><div class="sub">'+esc(x.k)+' · '+x.r+' dBm</div></div><button onclick="huntStart(\''+x.a+'\',1)">찾기</button></div>'}).join(''):'<div class="card"><span class="sub">지금 잡히는 와이파이 신호가 없습니다.</span></div>';
+}
+function sound(){
+  SND=!SND;
+  if(SND&&!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){SND=false}}
+  if(SND&&AC&&AC.resume)AC.resume();
+  $('hsnd').textContent=SND?'소리 끄기':'소리 켜기';
+}
+function beep(){
+  var wait=400;
+  if(SND&&AC&&HUNT&&!HUNT.lost&&HUNT.bars>0&&TAB==='hunt'){
+    var o=AC.createOscillator(),g=AC.createGain();o.frequency.value=500+HUNT.bars*90;g.gain.value=.15;
+    o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+.06);wait=1000-HUNT.bars*88;
+  }
+  setTimeout(beep,wait);
+}
+load();tab(TAB);marks();drawMap();drawMarks();get('/s');beep();
+setInterval(function(){if(!(HUNT&&TAB==='hunt'))get('/s')},2000);setInterval(getH,20000);
+setInterval(function(){if(HUNT||(S&&S.hunt))huntPoll()},500);
 </script>
 </body>
 </html>
