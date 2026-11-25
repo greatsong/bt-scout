@@ -6,7 +6,7 @@ Raspberry Pi Pico 2 W 한 개로 교실 안에서 **블루투스나 와이파이
 
 | 레이더 모드 | 건물 모드 | 건물 모드(기기 이름) |
 |---|---|---|
-| ![레이더 모드](docs/img/screen_radar.png) | ![건물 모드](docs/img/screen_building.png) | ![기기 이름 보기](docs/img/screen_names.png) |
+| <img src="docs/img/screen_radar.jpg" alt="레이더 모드 화면" width="240"> | <img src="docs/img/screen_building.jpg" alt="건물 모드 화면" width="240"> | <img src="docs/img/screen_names.jpg" alt="건물 모드의 기기 이름 보기 화면" width="240"> |
 
 위 화면은 컴퓨터에서 가상 자료로 띄운 예시입니다.
 
@@ -57,7 +57,7 @@ LED를 달 경우 색이 바뀌는 LED 줄(네오픽셀: WS2812·WS2813, 예: Gr
 1. **MicroPython 넣기**: micropython.org의 Download에서 **Raspberry Pi Pico 2 W**용 `.uf2`를 받습니다. 피코의 BOOTSEL 단추를 누른 채 USB를 꽂고, 나타난 드라이브에 `.uf2`를 끌어다 놓습니다.
 2. **파일 4개 올리기**: [Thonny](https://thonny.org)에서 `firmware` 폴더의 `main.py`, `detect.py`, `config.py`, `page.html`을 피코에 올립니다.
 3. **암호 바꾸기**: 피코 쪽 `config.py`의 `AP_PASSWORD`를 바꿉니다. 기본값 `12345678`은 공개된 값이니 **계속 켜 둘 때는 꼭 바꾸세요.**
-4. **켜기**: USB를 뽑았다 꽂습니다. Thonny 창에 `감지기 1학년 1,2반 시작…`이 찍히면 정상입니다.
+4. **켜기**: USB를 뽑았다 꽂습니다. Thonny 창에 `감지기 1학년 1,2반 시작.`으로 시작하는 줄이 찍히면 정상입니다.
 5. **보기**: 휴대전화의 **블루투스를 끄고**, 와이파이 `SCOUT`에 붙은 뒤 브라우저 주소창에 `http://192.168.4.1`을 넣습니다.
 
 화면이 안 열리면: 휴대전화의 모바일 데이터를 잠깐 끄고, 주소를 `http://`까지 넣었는지, 와이파이가 여전히 `SCOUT`인지 확인합니다. Thonny에서 정지 단추를 누르면 프로그램이 멈추니 Ctrl+D로 다시 시작합니다.
@@ -130,10 +130,11 @@ LED는 없어도 됩니다. 달면 화면을 열지 않고도 한눈에 볼 수 
 | 파랑 칸 | 블루투스 기기. 켜진 칸 수가 잡힌 수 |
 | 빨강 칸 | 와이파이(핫스팟 등). 켜진 칸 수가 잡힌 수 |
 | 초록이 번갈아 깜박 | 기준 측정 중 |
+| 노랑 칸 | 정밀 탐색 중. 고른 기기의 신호가 셀수록 칸이 늘어남. 첫 칸만 깜박이면 신호가 끊긴 것 |
 
 - `config.py`의 `LED_COUNT`만 LED 개수(10, 60 등)에 맞추면 됩니다. 표시는 항상 10칸이고, 60개면 한 칸이 LED 6개입니다.
 - LED만 따로 시험하려면 `simple/led_test.py`를 Thonny에서 실행합니다.
-- 색이 하나인 LED 한 개를 쓰려면 `LED_TYPE = "single"`로 바꿉니다(3초마다 반짝 = 정상, 계속 켜짐 = 감지).
+- 색이 하나인 LED 한 개를 쓰려면 `LED_TYPE = "single"`로 바꿉니다(3초마다 반짝 = 정상, 계속 켜짐 = 감지, 정밀 탐색 중에는 신호가 셀수록 빠르게 깜박임).
 
 ## 설정 (`firmware/config.py`)
 

@@ -75,7 +75,12 @@ class H(BaseHTTPRequestHandler):
                     if v == "off":
                         hunt.stop()
                     else:
-                        hunt.start(now, bytes.fromhex(v), k == "whunt", "가상 기기")
+                        addr = bytes.fromhex(v)
+                        d = tr.devs.get(addr)
+                        n = wt.nets.get(addr)
+                        label = (n[0] if n else "와이파이 신호") if k == "whunt" else \
+                            ((d[1] or "종류 모름") + (" · " + d[2] if d[2] else "")) if d else "블루투스 기기"
+                        hunt.start(now, addr, k == "whunt", label)
                 elif k == "peak":
                     hunt.clear_peak()
                 elif k == "th":
