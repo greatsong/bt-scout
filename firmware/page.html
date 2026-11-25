@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>전파 감지 현황</title>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--ink:#16181d;--sub:#5d6470;--line:#dfe3e8;--ok:#17794a;--okbg:#e3f5ea;--bad:#b3261e;--badbg:#fde7e5;--wait:#8a5a00;--waitbg:#fff1cf;--bt:#1d5fbf;--hot:#c62828;--sta:#c62828;--yard:#e9f3ec}
-@media(prefers-color-scheme:dark){:root{--bg:#111317;--card:#1b1e24;--ink:#eef0f3;--sub:#a3aab5;--line:#2c313a;--ok:#6fd49c;--okbg:#143424;--bad:#ff8a80;--badbg:#44191a;--wait:#ffcf70;--waitbg:#3d2e08;--bt:#7fb0ff;--hot:#ff7b72;--sta:#ff7b72;--yard:#16241b}}
+:root{--bg:#f6f7f9;--card:#fff;--ink:#16181d;--sub:#5d6470;--line:#dfe3e8;--ok:#17794a;--okbg:#e3f5ea;--bad:#b3261e;--badbg:#fde7e5;--wait:#8a5a00;--waitbg:#fff1cf;--bt:#1d5fbf;--hot:#c62828;--yard:#e9f3ec}
+@media(prefers-color-scheme:dark){:root{--bg:#111317;--card:#1b1e24;--ink:#eef0f3;--sub:#a3aab5;--line:#2c313a;--ok:#6fd49c;--okbg:#143424;--bad:#ff8a80;--badbg:#44191a;--wait:#ffcf70;--waitbg:#3d2e08;--bt:#7fb0ff;--hot:#ff7b72;--yard:#16241b}}
 *{box-sizing:border-box}
 body{margin:0;padding:14px;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,system-ui,sans-serif}
 main{max-width:720px;margin:0 auto}
@@ -114,10 +114,10 @@ details.grp .card{background:var(--bg)}
 .blip.al{width:14px;height:14px;margin:-7px;opacity:1;box-shadow:0 0 10px currentColor;background:currentColor}
 .blip.al:after{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid currentColor;animation:ping 1.6s ease-out infinite}
 @keyframes ping{from{transform:scale(.6);opacity:.9}to{transform:scale(2.6);opacity:0}}
-.blip.bt{color:#5aa9ff}.blip.hot{color:#ff6b6b}.blip.sta{color:#ff6b6b}
+.blip.bt{color:#5aa9ff}.blip.hot{color:#ff6b6b}
 .core{position:absolute;left:50%;top:50%;width:10px;height:10px;margin:-5px;border-radius:50%;background:#9dffc9;box-shadow:0 0 12px #9dffc9}
 .read{display:flex;justify-content:center;gap:14px;margin-top:12px;font-weight:700;font-size:14.5px;flex-wrap:wrap}
-.read .b{color:#5aa9ff}.read .h{color:#ff6b6b}.read .s{color:#ff6b6b}.read .z{color:#7dffb5}
+.read .b{color:#5aa9ff}.read .h{color:#ff6b6b}.read .z{color:#7dffb5}
 .scope .cap{text-align:center;font-size:12.5px;color:#7fae95;margin-top:6px}
 .scope .st{text-align:center;font-size:19px;font-weight:700;letter-spacing:.02em;margin-bottom:12px;color:#7dffb5}
 .scope .st.hit{color:#ff8f8f}.scope .st.learn{color:#ffd24a}
@@ -172,7 +172,6 @@ details.grp .card{background:var(--bg)}
 <h2>지금 가까이에서 잡히는 것</h2>
 <div id="near"></div>
 <div class="sub" id="wnote"></div>
-<div class="sub" id="snote"></div>
 <div id="rfbox" style="display:none"><div class="card" id="rfcard"></div></div>
 <div class="care"><b>확인하기 전에</b><ol>
   <li>이 기기의 <b>블루투스를 끄고</b> 보세요. 켜져 있으면 이 기기가 감지됩니다.</li>
@@ -276,7 +275,7 @@ function timeline(u){
   var n=HOURS*12,out='',end=Date.now(),span=HOURS*3600000,bk={};
   (u.bins||[]).forEach(function(b){
     var ms=abs(u,b[0]*60+30),i=Math.floor((ms-(end-span))/300000);
-    if(i<0||i>=n)return;var o=bk[i]||(bk[i]=[0,0]);o[0]=Math.max(o[0],b[1]);o[1]=Math.max(o[1],b[2]+b[3]);
+    if(i<0||i>=n)return;var o=bk[i]||(bk[i]=[0,0]);o[0]=Math.max(o[0],b[1]);o[1]=Math.max(o[1],b[2]);
   });
   var s0=(abs(u,u.start)-(end-span))/300000,s1=(u.got-(end-span))/300000;
   s0=Math.max(0,Math.min(n,s0));s1=Math.max(0,Math.min(n,s1));
@@ -285,12 +284,12 @@ function timeline(u){
     out+='<rect x="'+i+'" y="'+(19-h)+'" width="0.8" height="'+h+'" fill="'+(o[1]?'#ff6b6b':'#5aa9ff')+'"/>'}
   return '<svg class="tl" viewBox="0 0 '+n+' 20" preserveAspectRatio="none">'+out+'</svg>';
 }
-function cur(u){var k=u.counts||[0,0,0,0];return k[0]+k[1]+k[2]}
+function cur(u){var k=u.counts||[0,0,0];return k[0]+k[1]}
 function past(u,mins){
   // 수집 시점보다 mins분 전에 잡혀 있던 수. 그때 기록이 없으면 null.
   var t=u.now-mins*60;if(t<u.start)return null;
   var m=Math.floor(t/60),v=0;
-  (u.bins||[]).forEach(function(b){if(b[0]===m||b[0]===m-1)v=Math.max(v,b[1]+b[2]+b[3])});
+  (u.bins||[]).forEach(function(b){if(b[0]===m||b[0]===m-1)v=Math.max(v,b[1]+b[2])});
   return v;
 }
 function delta(c,p){
@@ -334,7 +333,7 @@ function nrow(name,label){
 }
 function setV(v){VIEW=v;save();drawMap()}
 function cell(name,label){
-  var u=MEM[name],live=name===CUR,c=u?cur(u):0,k=u?(u.counts||[0,0,0,0]):[0,0,0,0],wf=k[0]+k[2],p=u?past(u,AGO):null;
+  var u=MEM[name],live=name===CUR,c=u?cur(u):0,k=u?(u.counts||[0,0,0]):[0,0,0],wf=k[0],p=u?past(u,AGO):null;
   var cls='unit'+(live?' live':'')+(name===SEL?' sel':'')+(u?'':' none')+(wf?' wf':c?' bt':'')+(p!==null&&c>p?' up':'');
   var h='<div class="'+cls+'" onclick="pick(\''+name+'\')"><div class="row"><span class="nm">'+esc(label||name)+'</span><span class="when'+(live?' on':'')+'">'+(live?'● 연결됨':u?ago(u.got):'')+'</span></div>';
   if(!u)return h+'<div class="mix">아직 안 들름</div></div>';
@@ -381,7 +380,7 @@ function evHtml(u){
   (u.events||[]).slice().reverse().forEach(function(e){
     var a=abs(u,e[0]),b=abs(u,e[1]);if(b<lim)return;
     var mins=Math.max(1,Math.round((e[1]-e[0])/60));
-    h+='<div class="ev"><span class="t">'+hm(a)+'</span><span><span class="k" style="background:var(--'+(e[2]==='hot'?'hot':e[2]==='sta'?'sta':'bt')+')"></span>'+esc(e[3])+
+    h+='<div class="ev"><span class="t">'+hm(a)+'</span><span><span class="k" style="background:var(--'+(e[2]==='hot'?'hot':'bt')+')"></span>'+esc(e[3])+
        '<div class="sub">'+mins+'분 동안 · 가장 셀 때 '+e[4]+' dBm</div></span></div>';
   });
   return h||'<span class="sub">최근 '+HOURS+'시간 동안 감지 기록이 없습니다. (수집: '+ago(u.got)+')</span>';
@@ -407,10 +406,9 @@ function radar(s){
   }
   (s.devs||[]).forEach(function(d){if(!d.b&&d.age<=WIN)put(d,'bt','b'+d.id)});
   (s.wifi||[]).forEach(function(d){if(!d.b&&d.age<=75)put(d,'hot','w'+d.s)});
-  (s.sta||[]).forEach(function(d){if(!d.b&&d.age<=60)put(d,'sta','s'+d.id)});
   $('blips').innerHTML=h;
-  var c=s.counts||[0,0,0,0],t=c[0]+c[1]+c[2]+c[3];
-  $('read').innerHTML=t?(c[1]?'<span class="b">블루투스 '+c[1]+'</span>':'')+(c[0]?'<span class="h">핫스팟 '+c[0]+'</span>':'')+(c[2]?'<span class="s">와이파이 켠 기기 '+c[2]+'</span>':'')+(c[3]?'<span>광대역 급증</span>':''):'<span class="z">탐색 중</span>';
+  var c=s.counts||[0,0,0],t=c[0]+c[1]+c[2];
+  $('read').innerHTML=t?(c[1]?'<span class="b">블루투스 '+c[1]+'</span>':'')+(c[0]?'<span class="h">핫스팟 '+c[0]+'</span>':'')+(c[2]?'<span>광대역 급증</span>':''):'<span class="z">탐색 중</span>';
   $('radar').className='radar'+(s.learn>0?' learn':t?' hit':'');
 }
 function pick(n){SEL=n;drawMap()}
@@ -432,7 +430,6 @@ function lists(s){
   var all=[];
   (s.devs||[]).forEach(function(d){all.push({c:'bt',t:esc(d.k||'종류 모름')+(d.n?' · '+esc(d.n):''),s:'블루투스 #'+d.id,r:d.r,age:d.age,al:d.al,b:d.b,strong:d.r>=s.th,win:WIN})});
   (s.wifi||[]).forEach(function(d){all.push({c:'hot',t:esc(d.s),s:esc(d.k)+' · 채널 '+d.ch,r:d.r,age:d.age,al:d.al,b:d.b,strong:d.al,win:Math.max(75,WIN)})});
-  (s.sta||[]).forEach(function(d){all.push({c:'sta',t:esc(d.k),s:'와이파이 #'+d.id+' · 채널 '+d.ch,r:d.r,age:d.age,al:d.al,b:d.b,strong:d.al,win:Math.max(60,WIN)})});
   var near=[],weak=[],gone=[],base=[];
   all.forEach(function(x){
     if(x.b){x.tag='기준 기기';base.push(x)}
@@ -449,8 +446,7 @@ function lists(s){
   $('nlog').textContent=gone.length?'('+gone.length+')':'';
   var al=near.some(function(x){return x.al});
   $('tb-now').dataset.al=al?'1':'';$('tb-now').className=(TAB==='now'?'on':'')+(al?' alert':'');
-  $('wnote').textContent=s.wok===false?'핫스팟 탐지가 동작하지 않습니다. 블루투스만 감지 중입니다.':s.wok===null&&s.sniff===null?'핫스팟 탐지: 첫 훑기를 기다리는 중입니다.':s.sniff===null?'핫스팟 탐지 동작 중. 화면을 보는 동안에는 1분에 한 번 훑으며 그때 2~3초 멈춥니다.':'';
-  $('snote').textContent=s.sniff===false?'와이파이 청취기(ESP32)에서 신호가 오지 않습니다. 노란 선과 흰 선을 서로 바꿔 꽂아 보세요.':'';
+  $('wnote').textContent=s.wok===false?'핫스팟 탐지가 동작하지 않습니다. 블루투스만 감지 중입니다.':s.wok===null?'핫스팟 탐지: 첫 훑기를 기다리는 중입니다.':'핫스팟 탐지 동작 중. 화면을 보는 동안에는 1분에 한 번 훑으며 그때 2~3초 멈춥니다.';
 }
 function show(s){
   S=s;$('err').textContent='';$('unit').textContent=s.unit;

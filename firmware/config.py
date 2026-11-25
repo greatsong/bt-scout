@@ -48,10 +48,6 @@ BLE_INTERVAL_MS = 200    # 이 간격(ms)마다
 BLE_WINDOW_MS = 40       # 이만큼(ms) 듣는다
 BLE_ACTIVE = False       # True면 기기 이름을 더 잘 알아내지만 전파를 더 쓴다
 
-# ESP32 와이파이 청취기 (그로브 UART1 포트). 달지 않은 감지기는 False.
-SNIFFER = False          # ESP32를 단 감지기만 True로 바꾼다.
-STA_RSSI_MIN = -70       # 와이파이를 켠 기기를 '교실 안'으로 보는 세기
-
 # 광대역 전파 세기 센서 AD8317 (그로브 A0 포트). 단 감지기만 True.
 RF_SENSOR = False
 RF_ALERT = False         # True면 급증 때 LED도 켠다. 오탐 정도를 재 본 뒤에 켠다.
@@ -59,7 +55,7 @@ RF_DELTA = 10            # 평소보다 이만큼(dB) 세면 급증으로 센다
 RF_SLOPE = 0.022         # 센서 출력: 1dB당 전압 변화(V). AD8317 기준 약 0.022
 RF_INTERCEPT = 15        # 출력 전압이 0V가 되는 세기(dBm). AD8317 기준 약 15
 
-# 핫스팟 탐지(피코가 주변 와이파이를 직접 훑는다). ESP32 청취기(SNIFFER)가 없을 때 쓰인다.
+# 핫스팟 탐지(피코가 주변 와이파이를 직접 훑는다).
 WIFI_SCAN = True         # 핫스팟을 잡는다. 화면 접속이 자주 끊기면 False로 바꾼다.
 WIFI_RSSI_MIN = -70      # 이 세기 이상인 새 와이파이 신호를 감지로 본다.
 WIFI_EVERY = 20          # 평소 훑는 간격(초). 두 번 연속 잡혀야 감지하므로 약 40초 걸린다.

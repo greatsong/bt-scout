@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>교실 전파 감지기 만들기 ① 피코 편</title>
+<title>교실 전파 감지기 만들기 - 피코 편</title>
 <style>
 :root{--ink:#1b1f27;--sub:#5a6270;--line:#d9dee6;--bg:#fff;--soft:#f4f6f9;--red:#c62828;--redbg:#fdecea;--green:#1b7a48;--greenbg:#e6f5ec;--blue:#1d5fbf;--bluebg:#e8f0fc;--amber:#8a5a00;--amberbg:#fff3d6}
 *{box-sizing:border-box}
@@ -61,23 +61,21 @@ pre{background:#1e222b;color:#e9edf3;border-radius:12px;padding:14px 16px;overfl
 </head>
 <body>
 <main>
-<p class="small">교실 전파 감지기(bt-scout) · 2026년 11월 · 안내서 1/2</p>
-<h1>교실 전파 감지기 만들기<br>① 피코 편</h1>
+<p class="small">교실 전파 감지기(bt-scout) · 2026년 11월</p>
+<h1>교실 전파 감지기 만들기<br>피코 편</h1>
 <p class="lead">전자 부품을 처음 만져 보는 분을 위한 안내서입니다. 납땜은 없습니다. 이 안내서만 따라 해도 블루투스 기기와 핫스팟을 잡는 감지기가 완성됩니다.</p>
 <img class="pic" src="img/cover.jpg" alt="복도 벽에 놓인 작은 감지기와 교실">
 <div class="box note"><b>먼저 알아 두세요</b>
 감지기 1대에서 블루투스 감지, 화면, LED 표시까지는 실제 부품으로 확인했습니다. 여러 대를 동시에 쓰는 것과 정밀 탐색은 아직 컴퓨터에서 가상 자료로만 확인했습니다. 여러 대를 한꺼번에 만들지 말고 <b>1대를 먼저 완성해 교실에서 재 본 뒤</b> 나머지를 만드세요.</div>
-<div class="box tip"><b>안내서는 두 권입니다</b>
-① 피코 편(이 문서): 감지기 본체. 블루투스 기기와 핫스팟을 잡습니다.<br>② ESP32 편: 와이파이만 켜 둔 전화까지 잡도록 부품을 더합니다. 피코 편을 끝낸 뒤에 합니다.</div>
 
 <h2 id="s1">1. 무엇을 만드나</h2>
 <img class="pic" src="img/concept.jpg" alt="교실 안 기기의 전파가 벽을 지나 복도 감지기에 닿는 모습">
 <p>블루투스·와이파이 신호를 직접 탐지해 보는 네트워크 수업 자료입니다. 교실 안에서 전파를 내는 기기가 있으면 감지기가 LED 10개짜리 막대에 불을 켭니다. <b>색은 기기의 종류, 켜진 칸 수는 개수</b>입니다. 아무것도 없으면 초록 불이 켜져 있습니다. 색 불이 켜진 감지기 앞에서 아이폰이나 갤럭시 탭으로 어떤 기기가 얼마나 세게 잡혔는지 확인합니다.</p>
 <div class="tablewrap"><table>
-<tr><th>잡는 것</th><th>예</th><th>어느 안내서</th></tr>
-<tr><td>블루투스를 켠 기기</td><td>무선 이어폰, 스마트안경, 스마트워치, 휴대전화</td><td>① 피코 편</td></tr>
-<tr><td>와이파이를 내보내는 기기</td><td>전화 핫스팟, 자체 와이파이가 있는 소형 카메라</td><td>① 피코 편</td></tr>
-<tr><td>와이파이만 켜 둔 기기</td><td>와이파이를 켜 둔 전화·태블릿</td><td>② ESP32 편</td></tr>
+<tr><th>대상</th><th>예</th><th>잡히는가</th></tr>
+<tr><td>블루투스를 켠 기기</td><td>무선 이어폰, 스마트안경, 스마트워치, 휴대전화</td><td>잡힘</td></tr>
+<tr><td>와이파이를 내보내는 기기</td><td>전화 핫스팟, 자체 와이파이가 있는 소형 카메라</td><td>잡힘 (2.4GHz일 때)</td></tr>
+<tr><td>와이파이만 켜 둔 기기</td><td>와이파이를 켜 둔 전화·태블릿</td><td>잡히지 않음</td></tr>
 </table></div>
 <p>감지기는 모두 8대입니다. 한 대가 나란한 교실 2개를 맡습니다. 감지기끼리는 연결되어 있지 않아서, 한 대가 고장 나도 나머지는 그대로 동작합니다.</p>
 <p class="small">이 안내서의 삽화 3장은 이해를 돕기 위해 GPT로 그린 그림입니다. 실제 부품의 모양·색과 다릅니다. 부품을 꽂을 때는 삽화가 아니라 연결도와 표를 따르세요.</p>
@@ -119,7 +117,7 @@ USB 케이블이 꽂힌 채로 부품을 꽂거나 빼지 않습니다.</div>
 전원이 엉뚱한 핀으로 들어갑니다. USB 방향을 꼭 맞추세요.</div>
 
 <h3>4-2. 전원 스위치를 3V3으로</h3>
-<p>쉴드에 <b>3V3 ↔ 5V</b>라고 적힌 작은 스위치가 있습니다. <b>3V3 쪽</b>으로 밉니다. (나중에 ESP32를 달 때 5V로 바꿉니다. 그때 ESP32 편에서 안내합니다.)</p>
+<p>쉴드에 <b>3V3 ↔ 5V</b>라고 적힌 작은 스위치가 있습니다. <b>3V3 쪽</b>으로 밉니다.</p>
 
 <h3>4-3. LED 꽂기 (선택)</h3>
 <p>LED가 없으면 이 단계를 건너뜁니다.</p>
@@ -134,24 +132,24 @@ USB 케이블이 꽂힌 채로 부품을 꽂거나 빼지 않습니다.</div>
     <rect x="275" y="188" width="120" height="42" rx="8" fill="#fff" stroke="#9aa3b0"/><text x="335" y="215" fill="#9aa3b0">D20</text>
     <rect x="275" y="242" width="120" height="42" rx="8" fill="#fff" stroke="#9aa3b0"/><text x="335" y="269" fill="#9aa3b0">I2C0 · I2C1</text>
     <rect x="275" y="296" width="120" height="42" rx="8" fill="#fff" stroke="#9aa3b0"/><text x="335" y="323" fill="#9aa3b0">UART0</text>
-    <rect x="425" y="80" width="120" height="42" rx="8" fill="#1d5fbf"/><text x="485" y="107" fill="#fff">UART1</text>
+    <rect x="425" y="80" width="120" height="42" rx="8" fill="#fff" stroke="#9aa3b0"/><text x="485" y="107" fill="#9aa3b0">UART1</text>
     <rect x="425" y="134" width="120" height="42" rx="8" fill="#1b7a48"/><text x="485" y="161" fill="#fff">A0</text>
     <rect x="425" y="188" width="120" height="42" rx="8" fill="#fff" stroke="#9aa3b0"/><text x="485" y="215" fill="#9aa3b0">A1</text>
     <rect x="425" y="242" width="120" height="42" rx="8" fill="#fff" stroke="#9aa3b0"/><text x="485" y="269" fill="#9aa3b0">A2</text>
   </g>
   <g stroke-width="4" fill="none">
     <path d="M275 101 H190" stroke="#c62828"/>
-    <path d="M545 101 H630" stroke="#1d5fbf"/><path d="M545 155 H630" stroke="#1b7a48" stroke-dasharray="8 6"/>
+    <path d="M545 155 H630" stroke="#1b7a48" stroke-dasharray="8 6"/>
   </g>
   <g font-size="15" font-weight="700" text-anchor="middle">
     <rect x="30" y="76" width="160" height="50" rx="10" fill="#fdecea" stroke="#c62828" stroke-width="2"/><text x="110" y="107" fill="#c62828">RGB LED Stick</text>
-        <rect x="630" y="76" width="160" height="50" rx="10" fill="#e8f0fc" stroke="#1d5fbf" stroke-width="2"/><text x="710" y="107" fill="#1d5fbf">XIAO ESP32-C3</text>
+        
     <rect x="630" y="130" width="160" height="50" rx="10" fill="#e6f5ec" stroke="#1b7a48" stroke-width="2" stroke-dasharray="8 6"/><text x="710" y="155" fill="#1b7a48">광대역 센서</text><text x="710" y="173" font-size="12" font-weight="400" fill="#1b7a48">(1대만)</text>
   </g>
   <text x="410" y="358" text-anchor="middle" font-size="13" fill="#5a6270">회색 포트는 비워 둡니다</text>
   <text x="410" y="392" text-anchor="middle" font-size="13" fill="#5a6270">이 그림은 연결 관계만 보여 줍니다. 실제 소켓의 위치는 판에 인쇄된 글자로 찾으세요.</text>
 </svg>
-<figcaption>이 안내서에서는 LED 막대만 꽂습니다. UART1과 A0는 ESP32 편에서 씁니다.</figcaption>
+<figcaption>LED 막대만 꽂습니다. A0는 부록의 광대역 센서를 달 때만 씁니다.</figcaption>
 </figure><ol class="steps">
 <li>Grove 케이블 한쪽을 <b>LED 막대</b>의 흰 소켓에 꽂습니다. 막대에 소켓이 양 끝에 두 개 있으면 <b>IN</b> 또는 화살표가 시작되는 쪽에 꽂습니다.</li>
 <li>반대쪽을 쉴드의 <b>D16</b>에 꽂습니다. 플러그는 한 방향으로만 들어갑니다. 안 들어가면 뒤집어 보세요.</li>
@@ -195,7 +193,7 @@ LED_COUNT = 10           # LED 개수(10, 60 등)
 AP_CHANNEL = 1           # 7장의 표를 보고 1, 6, 11 중 하나</pre>
 <p>고친 뒤 <b>Ctrl+S</b>(Mac은 Cmd+S)로 저장합니다. 따옴표(<code>"</code>)는 지우지 않습니다.</p>
 <div class="box tip"><b>나머지 줄은 그대로 둡니다</b>
-<code>SNIFFER</code>와 <code>RF_SENSOR</code>는 ESP32 편에서 부품을 달 때 바꿉니다.</div>
+<code>RF_SENSOR</code>는 부록의 광대역 센서를 달 때만 바꿉니다.</div>
 
 <h2 id="s6">6. 처음 켜 보기</h2>
 <ol class="steps">
@@ -242,12 +240,11 @@ AP_CHANNEL = 1           # 7장의 표를 보고 1, 6, 11 중 하나</pre>
 <tr><th>LED 막대</th><th>뜻</th></tr>
 <tr><td>첫 칸이 <b style="color:#1b7a48">초록</b></td><td>정상, 감지 없음</td></tr>
 <tr><td><b style="color:#1d5fbf">파랑</b> 칸</td><td>블루투스 기기. 켜진 칸 수가 잡힌 수</td></tr>
-<tr><td><b style="color:#c62828">빨강</b> 칸</td><td>와이파이. 핫스팟, 기기 간 직접 연결, 와이파이를 켠 기기(ESP32를 단 감지기). 켜진 칸 수가 잡힌 수</td></tr>
+<tr><td><b style="color:#c62828">빨강</b> 칸</td><td>와이파이. 핫스팟, 기기 간 직접 연결. 켜진 칸 수가 잡힌 수</td></tr>
 <tr><td><b>흰색</b> 칸</td><td>광대역 전파 급증 (센서를 달고 켠 감지기만)</td></tr>
 <tr><td>10칸이 모두 켜짐</td><td>합쳐서 10개 이상. 종류마다 최소 한 칸은 보입니다</td></tr>
 <tr><td>초록이 한 칸 건너 번갈아 깜박</td><td>기준 측정 중(60초)</td></tr>
 <tr><td><b style="color:#8a5a00">노랑</b> 칸</td><td>정밀 탐색 중. 고른 기기의 신호가 셀수록 칸이 늘어남. 첫 칸만 깜박이면 신호가 끊긴 것</td></tr>
-<tr><td>마지막 칸이 주황으로 깜박</td><td>ESP32에서 신호가 오지 않음</td></tr>
 <tr><td>3초 넘게 모두 꺼짐</td><td>전원이나 프로그램 문제</td></tr>
 </table></div>
 <p class="small">색 순서는 왼쪽부터 빨강, 파랑, 흰색입니다. LED가 60개면 한 칸이 LED 6개입니다. 신호가 사라지고 1~2분이 지나면 그 칸이 꺼집니다.</p>
@@ -364,7 +361,7 @@ AP_CHANNEL = 1           # 7장의 표를 보고 1, 6, 11 중 하나</pre>
 <div class="tablewrap"><table>
 <tr><th>상황</th><th>잡히는가</th></tr>
 <tr><td>블루투스를 켠 이어폰·워치·스마트안경·전화</td><td>잡힘</td></tr>
-<tr><td>와이파이만 켜 둔 전화</td><td>피코만으로는 잡히지 않음. ESP32 편의 부품을 달면 잡힘</td></tr>
+<tr><td>와이파이만 켜 둔 전화</td><td>잡히지 않음</td></tr>
 <tr><td>핫스팟을 켠 전화</td><td>잡힘</td></tr>
 <tr><td>블루투스·와이파이를 끄고 이동통신만 쓰는 전화</td><td>잡히지 않음</td></tr>
 <tr><td>전원이 꺼진 기기, 저장만 하는 카메라, 받기만 하는 수신기</td><td>잡히지 않음</td></tr>
@@ -383,7 +380,7 @@ AP_CHANNEL = 1           # 7장의 표를 보고 1, 6, 11 중 하나</pre>
 <tr><td>피코(Pico)</td><td>작은 컴퓨터 기판. 프로그램을 넣으면 그 일만 계속합니다.</td></tr>
 <tr><td>쉴드(Shield)</td><td>피코 위아래에 끼워 부품을 쉽게 꽂게 해 주는 받침 기판</td></tr>
 <tr><td>Grove(그로브)</td><td>부품을 4핀 플러그로 꽂는 규격. 납땜이 필요 없습니다.</td></tr>
-<tr><td>포트</td><td>쉴드의 흰 소켓 하나하나. 옆에 이름(D16, A0, UART1 등)이 인쇄되어 있습니다.</td></tr>
+<tr><td>포트</td><td>쉴드의 흰 소켓 하나하나. 옆에 이름(D16, A0 등)이 인쇄되어 있습니다.</td></tr>
 <tr><td>MicroPython</td><td>피코에서 돌아가는 파이썬</td></tr>
 <tr><td>uf2</td><td>피코에 끌어다 놓아 설치하는 파일 형식</td></tr>
 <tr><td>업로드</td><td>컴퓨터의 프로그램을 기판으로 보내는 일</td></tr>
@@ -394,7 +391,45 @@ AP_CHANNEL = 1           # 7장의 표를 보고 1, 6, 11 중 하나</pre>
 
 
 <div class="box ok"><b>여기까지 되면</b>
-감지기 본체가 완성되었습니다. 와이파이만 켜 둔 전화까지 잡으려면 이어서 「② ESP32 편」을 따라 하세요.</div>
+감지기가 완성되었습니다. 9장의 활동과 정밀 탐색을 해 보세요.</div>
+<h2 id="s13">부록. 광대역 전파 센서 (실험용, 1대만)</h2>
+<p>블루투스와 와이파이를 모두 끄고 이동통신만 쓰는 전화를 잡아 보려는 실험용 부품입니다. 모든 전파의 세기를 합쳐 하나의 숫자로만 알려 주며, 감지기 자신의 전파와 기지국 신호에도 반응합니다. 쓸 만한지 재 보는 단계이므로 <b>전체에서 1대에만</b> 답니다.</p>
+<div class="tablewrap"><table>
+<tr><th>부품</th><th>수량</th><th>비고</th></tr>
+<tr><td>AD8317 전파 세기 감지 모듈</td><td>1</td><td>AD8318이 아니라 AD8317</td></tr>
+<tr><td>SMA 안테나(LTE용)</td><td>1</td><td>모듈의 금색 단자에 돌려 끼움</td></tr>
+<tr><td>Grove-점퍼 변환 케이블</td><td>1</td><td>쉴드의 A0 포트에 꽂음</td></tr>
+</table></div>
+
+<figure>
+<svg viewBox="0 0 820 260" role="img" aria-label="광대역 센서 선 색 연결도">
+  <rect x="30" y="50" width="170" height="160" rx="14" fill="#e6f5ec" stroke="#1b7a48" stroke-width="2"/>
+  <text x="115" y="120" text-anchor="middle" font-size="17" font-weight="700" fill="#1b7a48">쉴드</text>
+  <text x="115" y="144" text-anchor="middle" font-size="17" font-weight="700" fill="#1b7a48">A0 포트</text>
+  <rect x="610" y="30" width="180" height="200" rx="14" fill="#f4f6f9" stroke="#1b1f27" stroke-width="2"/>
+  <text x="700" y="56" text-anchor="middle" font-size="16" font-weight="700" fill="#1b1f27">AD8317 모듈</text>
+  <g stroke-width="7" fill="none" stroke-linecap="round">
+    <path d="M200 90 H610" stroke="#d32f2f"/><path d="M200 135 H610" stroke="#222"/><path d="M200 180 H610" stroke="#f2c200"/>
+  </g>
+  <g font-size="15" font-weight="700">
+    <text x="405" y="81" text-anchor="middle" fill="#d32f2f">빨강</text><text x="405" y="126" text-anchor="middle" fill="#222">검정</text><text x="405" y="171" text-anchor="middle" fill="#8a6d00">노랑</text>
+    <text x="630" y="95" fill="#d32f2f">VCC</text><text x="630" y="140" fill="#222">GND</text><text x="630" y="185" fill="#8a6d00">OUT (VOUT)</text>
+  </g>
+  <text x="405" y="222" text-anchor="middle" font-size="14" fill="#5a6270">흰색 선은 어디에도 꽂지 않고 끝을 테이프로 감아 둡니다</text>
+</svg>
+<figcaption>광대역 센서의 선 연결. 모듈의 금색 단자에는 안테나를 돌려 끼웁니다.</figcaption>
+</figure>
+
+
+<ol class="steps">
+<li>전원을 뽑은 상태에서 위 그림대로 꽂습니다(스위치는 3V3 그대로).</li>
+<li>피코의 <code>config.py</code>에서 <code>RF_SENSOR = False</code>를 <code>RF_SENSOR = True</code>로 바꿔 저장합니다.</li>
+<li>화면에 "광대역 전파 세기" 칸이 생깁니다. "지금", "평소", "최근 1분 급증" 숫자가 보입니다.</li>
+<li>이동통신만 켠 전화로 교실 먼 자리에서 영상을 틀어 봅니다. "지금" 값이 "평소"보다 10 이상 올라가고, 전화를 쓰지 않을 때는 급증이 0에 머물면 쓸 만한 것입니다.</li>
+<li>쓸 만하다고 판단되면 <code>RF_ALERT = True</code>로 바꿉니다. 그때부터 급증 시 LED 막대에 흰색 칸이 켜집니다.</li>
+</ol>
+<p class="small">화면의 dBm 값은 추정이며 센서 개체마다 다릅니다.</p>
+
 </main>
 </body>
 </html>

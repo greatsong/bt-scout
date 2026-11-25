@@ -3,7 +3,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "firmware"))
-from detect import History, Hunt, hunt_frame, RfWatch, expand_frame, limit_current, StaWatch, Tracker, WifiTracker, is_fixed, led_frame, parse  # noqa: E402
+from detect import History, Hunt, hunt_frame, RfWatch, expand_frame, limit_current, Tracker, WifiTracker, is_fixed, led_frame, parse  # noqa: E402
 
 IPHONE = bytes([2, 1, 0x1A, 7, 0xFF, 0x4C, 0x00, 0x10, 0x03, 1, 2, 3])
 AIRPODS = bytes([6, 0xFF, 0x4C, 0x00, 0x07, 0x01, 0x00])
@@ -113,103 +113,44 @@ class WifiTest(unittest.TestCase):
         self.assertEqual(parse(adv)[0], "스마트안경 추정")
 
 
-class StaTest(unittest.TestCase):
-    PHONE1 = bytes([0x3A, 1, 1, 1, 1, 1])   # 바뀌는 주소
-    PHONE2 = bytes([0x5E, 2, 2, 2, 2, 2])   # 같은 전화가 주소를 바꾼 것
-    PC = bytes([0x00, 3, 3, 3, 3, 3])       # 고정 주소(교실 컴퓨터)
-
-    def test_two_bursts_with_changed_address(self):
-        st = StaWatch()
-        st.seen(5, self.PHONE1, -60, "P", 6)
-        self.assertFalse(st.alert(5))
-        st.seen(8, self.PHONE1, -60, "P", 6)      # 같은 10초 구간은 한 번으로 셈
-        self.assertFalse(st.alert(8))
-        st.seen(95, self.PHONE2, -62, "P", 1)
-        self.assertTrue(st.alert(95))
-        self.assertTrue(st.snapshot(95)[0]["al"])
-        self.assertTrue(st.alert(95 + 120))
-        self.assertFalse(st.alert(95 + 140))
-
-    def test_single_burst_expires(self):
-        st = StaWatch()
-        st.seen(5, self.PHONE1, -60, "P", 6)
-        st.seen(400, self.PHONE2, -60, "P", 6)    # 5분 넘게 떨어진 두 번
-        self.assertFalse(st.alert(400))
-
-    def test_weak_and_baseline(self):
-        st = StaWatch()
-        st.seen(0, self.PC, -50, "D", 1, learning=True)
-        st.seen(0, self.PHONE1, -50, "P", 1, learning=True)
-        self.assertEqual(st.base, {self.PC})
-        for t in (100, 130, 160):
-            st.seen(t, self.PC, -50, "D", 1)
-            st.seen(t, self.PHONE1, -85, "P", 1)
-        self.assertFalse(st.alert(160))
-
-
-class RfTest(unittest.TestCase):
-    def test_spikes(self):
-        rf = RfWatch()
-        for t in range(30):
-            rf.update(t, -50 + t % 2)
-        self.assertFalse(rf.alert(29))
-        self.assertEqual(rf.status(29)["n"], 0)
-        for t in (30, 33, 36):
-            rf.update(t, -25)
-        self.assertTrue(rf.alert(36))
-        self.assertAlmostEqual(rf.status(36)["floor"], -50, delta=2)
-        rf.update(120, -50)
-        self.assertFalse(rf.alert(120))
-
-
 class LedTest(unittest.TestCase):
     G, R, B, Y, W, O = (0, 40, 0), (40, 0, 0), (0, 0, 40), (40, 25, 0), (40, 40, 40), (0, 0, 0)
 
     def test_idle_green(self):
-        self.assertEqual(led_frame(0, 0, 0, 0, 0), [self.G] + [self.O] * 9)
-        self.assertEqual(led_frame(0, 0, 0, 0, 5), [self.G] + [self.O] * 9)
+        self.assertEqual(led_frame(0, 0, 0, 0), [self.G] + [self.O] * 9)
+        self.assertEqual(led_frame(0, 0, 0, 5), [self.G] + [self.O] * 9)
 
     def test_counts_and_colors(self):
-        f = led_frame(1, 3, 2, 0, 7)
+        f = led_frame(3, 3, 0, 7)
         self.assertEqual(f, [self.R] * 3 + [self.O] + [self.B] * 3 + [self.O] * 3)   # 빨강과 파랑 사이를 띄움
-        self.assertEqual(led_frame(4, 6, 0, 0, 7), [self.R] * 4 + [self.B] * 6)       # 칸이 모자라면 붙임
+        self.assertEqual(led_frame(4, 6, 0, 7), [self.R] * 4 + [self.B] * 6)       # 칸이 모자라면 붙임
 
     def test_overflow_keeps_every_kind(self):
-        f = led_frame(2, 30, 4, 1, 0)
+        f = led_frame(6, 30, 1, 0)
         self.assertEqual(len(f), 10)
         self.assertEqual(f.count(self.R), 6)
         self.assertEqual(f.count(self.B), 3)
         self.assertEqual(f[-1], self.W)
 
-    def test_learning_and_warning(self):
-        f = led_frame(0, 5, 0, 0, 0, learning=True)
+    def test_learning(self):
+        f = led_frame(0, 5, 0, 0, learning=True)
         self.assertEqual(f.count(self.G), 5)
-        self.assertEqual(led_frame(0, 1, 0, 0, 0, warn=True)[9], (40, 10, 0))
-        self.assertEqual(led_frame(0, 1, 0, 0, 5, warn=True)[9], self.O)
-
-    def test_sta_count(self):
-        st = StaWatch()
-        st.seen(5, bytes([0x3A, 1, 1, 1, 1, 1]), -60, "P", 6)
-        st.seen(95, bytes([0x5E, 2, 2, 2, 2, 2]), -60, "P", 1)
-        st.seen(96, bytes([0x6E, 3, 3, 3, 3, 3]), -60, "P", 1)
-        self.assertEqual(st.alert_count(96), 2)
-        self.assertEqual(st.alert_count(200), 1)
 
 
 class HistoryTest(unittest.TestCase):
     def test_bins_and_events(self):
         h = History(hours=1)
-        h.sample(0, 0, 0, 0)
+        h.sample(0, 0, 0)
         self.assertEqual(h.bins, [])
-        h.sample(65, 0, 2, 0)
-        h.sample(70, 1, 3, 0)
-        self.assertEqual(h.bins, [[1, 3, 1, 0]])
+        h.sample(65, 0, 2)
+        h.sample(70, 1, 3)
+        self.assertEqual(h.bins, [[1, 3, 1]])
         h.note(65, b"a", "bt", "Apple", -70)
         h.note(100, b"a", "bt", "Apple 이어폰", -60)
         h.note(400, b"a", "bt", "Apple 이어폰", -65)     # 2분 넘게 끊겼으므로 새 사건
         self.assertEqual(len(h.events), 2)
         self.assertEqual(h.events[0], [65, 100, "bt", "Apple 이어폰", -60])
-        h.sample(65 + 3700, 0, 1, 0)                      # 1시간 지난 것은 지움
+        h.sample(65 + 3700, 0, 1)                      # 1시간 지난 것은 지움
         self.assertEqual(len(h.bins), 1)
         self.assertEqual([e[0] for e in h.events], [400])   # 65초에 시작한 사건만 지워짐
         d = h.dump(5000)
@@ -232,7 +173,7 @@ class HistoryTest(unittest.TestCase):
 
 class LedSizeTest(unittest.TestCase):
     def test_expand_to_60_and_10(self):
-        f = led_frame(1, 2, 0, 0, 7)
+        f = led_frame(1, 2, 0, 7)
         self.assertEqual(expand_frame(f, 10), f)
         big = expand_frame(f, 60)
         self.assertEqual(len(big), 60)

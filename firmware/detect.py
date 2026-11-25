@@ -277,86 +277,6 @@ class WifiTracker:
         return rows[:limit]
 
 
-STA_KINDS = {
-    "P": "주변 와이파이를 찾는 중",
-    "C": "와이파이에 접속 시도",
-    "D": "와이파이로 자료 전송 중",
-}
-
-
-class StaWatch:
-    """와이파이를 켠 기기(공유기가 아닌 쪽). ESP32 청취기가 보내 준 것을 모은다.
-
-    이런 기기는 주소를 수시로 바꾸므로 기기별로 세지 않고, '강한 신호가 잡힌
-    10초 구간'이 최근 몇 분 안에 몇 번 있었는지로 판정한다.
-    """
-
-    def __init__(self, rssi_min=-70, hits=2, window=300, hold=120, forget=300):
-        self.rssi_min = rssi_min
-        self.hits = hits
-        self.window = window
-        self.hold = hold
-        self.forget = forget
-        self.devs = {}      # mac -> [rssi, last, kind, channel]
-        self.base = set()   # 기준 측정 때 있던 고정 주소 기기(교실 컴퓨터, 프린터 등)
-        self.events = []    # 강한 신호가 잡힌 10초 구간 번호
-
-    def seen(self, now, mac, rssi, kind, ch, learning=False):
-        if learning and not (mac[0] & 0x02) and len(self.base) < 150:
-            self.base.add(mac)
-        d = self.devs.get(mac)
-        if d is None:
-            if len(self.devs) >= 60:
-                return
-            self.devs[mac] = [rssi, now, kind, ch]
-        else:
-            d[0], d[1], d[2], d[3] = rssi, now, kind, ch
-        if rssi >= self.rssi_min and mac not in self.base and not learning:
-            b = now // 10
-            if not self.events or self.events[-1] != b:
-                self.events.append(b)
-
-    def sweep(self, now):
-        lo = (now - self.window) // 10
-        while self.events and self.events[0] < lo:
-            self.events.pop(0)
-        for m in [m for m, d in self.devs.items() if now - d[1] > self.forget]:
-            del self.devs[m]
-
-    def alert(self, now):
-        self.sweep(now)
-        if len(self.events) < self.hits:
-            return False
-        return now - self.events[-1] * 10 <= self.hold + 10
-
-    def alert_count(self, now):
-        """감지 중이면 최근 1분 안에 강하게 잡힌 주소 수(최소 1). 주소가 바뀌어 실제보다 많을 수 있다."""
-        if not self.alert(now):
-            return 0
-        n = 0
-        for m, d in self.devs.items():
-            if d[0] >= self.rssi_min and m not in self.base and now - d[1] <= 60:
-                n += 1
-        return max(1, n)
-
-    def snapshot(self, now, limit=15):
-        on = self.alert(now)
-        rows = []
-        for m, d in self.devs.items():
-            strong = d[0] >= self.rssi_min and m not in self.base
-            rows.append({
-                "id": "%02X%02X" % (m[-2], m[-1]),
-                "k": STA_KINDS.get(d[2], "와이파이 신호"),
-                "r": d[0],
-                "ch": d[3],
-                "age": now - d[1],
-                "al": on and strong and now - d[1] <= self.window,
-                "b": m in self.base,
-            })
-        rows.sort(key=lambda r: (not r["al"], -r["r"]))
-        return rows[:limit]
-
-
 class RfWatch:
     """광대역 전파 세기 센서(AD8317). 평소 수준보다 갑자기 세진 순간을 센다."""
 
@@ -395,10 +315,10 @@ class RfWatch:
 LED_OFF = (0, 0, 0)
 
 
-def led_frame(n_hot, n_bt, n_sta, n_rf, tick, learning=False, warn=False, n=10, bright=40):
+def led_frame(n_hot, n_bt, n_rf, tick, learning=False, n=10, bright=40):
     """LED 10개에 켤 색을 정한다. tick은 0.1초마다 1씩 느는 수.
 
-    빨강 = 와이파이(핫스팟, 기기 간 직접 연결, 와이파이를 켠 기기),
+    빨강 = 와이파이(핫스팟, 기기 간 직접 연결),
     파랑 = 블루투스 기기, 흰색 = 광대역 전파 급증.
     감지가 없으면 첫 칸이 초록으로 켜져 있다.
     """
@@ -406,7 +326,7 @@ def led_frame(n_hot, n_bt, n_sta, n_rf, tick, learning=False, warn=False, n=10, 
     green = (0, b, 0)
     if learning:   # 기준 측정 중: 초록이 한 칸씩 번갈아 깜박임
         return [green if (i + tick // 3) % 2 == 0 else LED_OFF for i in range(n)]
-    kinds = [((b, 0, 0), n_hot + n_sta), ((0, 0, b), n_bt), ((b, b, b), n_rf)]
+    kinds = [((b, 0, 0), n_hot), ((0, 0, b), n_bt), ((b, b, b), n_rf)]
     present = [[c, k] for c, k in kinds if k > 0]
     frame = []
     if not present:
@@ -427,8 +347,6 @@ def led_frame(n_hot, n_bt, n_sta, n_rf, tick, learning=False, warn=False, n=10, 
                 frame.append(LED_OFF)
             frame += [c] * t
         frame += [LED_OFF] * (n - len(frame))
-    if warn and frame[n - 1] == LED_OFF and tick % 10 < 5:
-        frame[n - 1] = (b, b // 4, 0)   # 마지막 칸 주황 깜박임: ESP32에서 신호가 안 옴
     return frame
 
 
@@ -444,18 +362,17 @@ class History:
         self.events = []    # [시작, 끝, 분류, 설명, 가장 센 세기]
         self.open = {}
 
-    def sample(self, now, n_hot, n_bt, n_sta):
+    def sample(self, now, n_hot, n_bt):
         if self.start is None:
             self.start = now
         m = now // 60
-        if n_hot or n_bt or n_sta:
+        if n_hot or n_bt:
             if self.bins and self.bins[-1][0] == m:
                 b = self.bins[-1]
                 b[1] = max(b[1], n_bt)
                 b[2] = max(b[2], n_hot)
-                b[3] = max(b[3], n_sta)
             else:
-                self.bins.append([m, n_bt, n_hot, n_sta])
+                self.bins.append([m, n_bt, n_hot])
         lo = m - self.hours * 60
         while self.bins and self.bins[0][0] < lo:
             self.bins.pop(0)

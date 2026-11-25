@@ -1,5 +1,5 @@
 # 복도 전파 감지기 (Raspberry Pi Pico 2 WH + Grove Shield, MicroPython)
-# LED 10개(Grove RGB LED Stick): D16, ESP32 와이파이 청취기: UART1, 광대역 전파 센서: A0
+# LED 줄(Grove RGB LED Stick 등): D16, 광대역 전파 센서(선택): A0
 # 확인 화면: 감지기 와이파이에 붙어 http://192.168.4.1
 
 import asyncio
@@ -9,10 +9,10 @@ import time
 import bluetooth
 import neopixel
 import network
-from machine import ADC, Pin, UART, WDT
+from machine import ADC, Pin, WDT
 
 import config
-from detect import (History, Hunt, RfWatch, StaWatch, Tracker, WifiTracker,
+from detect import (History, Hunt, RfWatch, Tracker, WifiTracker,
                     expand_frame, hunt_frame, led_frame, limit_current)
 
 SETTINGS = "settings.json"
@@ -33,11 +33,10 @@ except Exception:
 
 tr = Tracker(rssi_min=config.RSSI_MIN, persist=config.PERSIST, hold=config.HOLD)
 wt = WifiTracker(rssi_min=config.WIFI_RSSI_MIN, skip_prefix=config.AP_SSID)
-st = StaWatch(rssi_min=config.STA_RSSI_MIN)
 rf = RfWatch(delta=config.RF_DELTA)
 hist = History(hours=config.HISTORY_HOURS)
 hunt = Hunt(secs=config.HUNT_SECS)
-state = {"scan_done": False, "wok": None, "sn_last": None, "own": b"", "hmode": False}
+state = {"scan_done": False, "wok": None, "hmode": False}
 
 
 def log_error(where, e):
@@ -62,14 +61,12 @@ def load_settings():
     tr.rssi_min = s.get("th", tr.rssi_min)
     tr.base = set(bytes.fromhex(h) for h in s.get("base", []))
     wt.base = set(bytes.fromhex(h) for h in s.get("wbase", []))
-    st.base = set(bytes.fromhex(h) for h in s.get("sbase", []))
 
 
 def save_settings():
     s = {"th": tr.rssi_min,
          "base": [a.hex() for a in tr.base],
-         "wbase": [a.hex() for a in wt.base],
-         "sbase": [a.hex() for a in st.base]}
+         "wbase": [a.hex() for a in wt.base]}
     try:
         with open(SETTINGS, "w") as f:
             json.dump(s, f)
@@ -82,18 +79,13 @@ def learning():
 
 
 def counts(now):
-    """(핫스팟·직접 연결, 블루투스, 와이파이를 켠 기기, 광대역 급증) 수"""
+    """(핫스팟·직접 연결, 블루투스, 광대역 급증) 수"""
     n_rf = 1 if config.RF_SENSOR and config.RF_ALERT and rf.alert(now) else 0
-    n_sta = st.alert_count(now) if config.SNIFFER else 0
-    return wt.alert_count(now), tr.alert_count(now), n_sta, n_rf
+    return wt.alert_count(now), tr.alert_count(now), n_rf
 
 
 def alert_total(now):
     return sum(counts(now))
-
-
-def sniffer_ok(now):
-    return state["sn_last"] is not None and now - state["sn_last"] <= 10
 
 
 # ---------- 블루투스 스캔 ----------
@@ -153,20 +145,15 @@ def start_ap():
 
 def status_json():
     now = time.time()
-    sniff = None
-    if config.SNIFFER:
-        sniff = sniffer_ok(now)
     return json.dumps({
         "unit": config.UNIT,
         "alerts": alert_total(now),
         "counts": counts(now),
         "wok": state["wok"],
-        "sniff": sniff,
         "wifi": wt.snapshot(now),
-        "sta": st.snapshot(now) if config.SNIFFER else [],
         "rf": rf.status(now) if config.RF_SENSOR else None,
         "th": tr.rssi_min,
-        "base": len(tr.base) + len(wt.base) + len(st.base),
+        "base": len(tr.base) + len(wt.base),
         "learn": tr.learning_left(now),
         "hunt": hunt.active(now),
         "total": len(tr.devs),
@@ -184,15 +171,13 @@ def history_json():
 
 def record(now):
     """5초마다 호출: 지금 감지 중인 것을 기록에 남긴다."""
-    n_hot, n_bt, n_sta, n_rf = counts(now)
-    hist.sample(now, n_hot, n_bt, n_sta)
+    n_hot, n_bt, n_rf = counts(now)
+    hist.sample(now, n_hot, n_bt)
     for addr, kind, name, rssi in tr.alerts(now):
         label = (kind or "종류 모름") + (" · " + name if name else "")
         hist.note(now, addr, "bt", label, rssi)
     for bssid, ssid, kind, rssi in wt.alerts(now):
         hist.note(now, bssid, "hot", (ssid or "(이름 숨김)") + " · " + kind, rssi)
-    if n_sta:
-        hist.note(now, "sta", "sta", "와이파이를 켠 기기", config.STA_RSSI_MIN)
 
 
 def hunt_label(addr, wifi):
@@ -222,12 +207,10 @@ def command(query):
         elif k == "learn":
             tr.start_learning(time.time(), 60)
             wt.base = set()
-            st.base = set()
             state["learn_save"] = True
         elif k == "clearbase":
             tr.base = set()
             wt.base = set()
-            st.base = set()
             save_settings()
 
 
@@ -285,40 +268,7 @@ async def handle(reader, writer):
             pass
 
 
-# ---------- ESP32 와이파이 청취기 (UART1: GP4, GP5) ----------
-async def sniffer_watch():
-    uart = UART(1, baudrate=115200, tx=Pin(4), rx=Pin(5), rxbuf=4096)
-    # 피코는 듣기만 한다. 보내는 핀을 입력으로 돌려 두어 선을 바꿔 꽂아도 고장 나지 않게 한다.
-    Pin(4, Pin.IN)
-    reader = asyncio.StreamReader(uart)
-    aps = {}
-    last_feed = time.time()
-    while True:
-        try:
-            raw = await reader.readline()
-            f = raw.decode().strip().split(",")
-            now = time.time()
-            if f[0] == "H":
-                state["sn_last"] = now
-                state["wok"] = True
-                if now - last_feed >= 20 or (learning() and now - last_feed >= 5):
-                    wt.scan_result(now, list(aps.values()), learning())
-                    aps = {}
-                    last_feed = now
-            elif f[0] == "A" and len(f) >= 5:
-                mac = bytes.fromhex(f[1])
-                rssi = int(f[2])
-                if mac != state["own"] and (mac not in aps or rssi > aps[mac][3]):
-                    aps[mac] = (bytes.fromhex(f[4]), mac, int(f[3]), rssi)
-            elif f[0] == "S" and len(f) >= 6:
-                if f[5] != "-" and bytes.fromhex(f[5]) == state["own"]:
-                    continue   # 이 감지기의 확인 화면을 보고 있는 기기
-                st.seen(now, bytes.fromhex(f[1]), int(f[2]), f[3], int(f[4]), learning())
-        except Exception:
-            await asyncio.sleep_ms(50)   # 깨진 줄은 버린다
-
-
-# ---------- 피코 자체 와이파이 훑기 (청취기가 없을 때) ----------
+# ---------- 주변 와이파이 훑기 (핫스팟 탐지) ----------
 async def wifi_watch():
     """주변 와이파이(핫스팟)를 훑는다.
 
@@ -399,11 +349,9 @@ async def indicator():
             if state.get("learn_save") and not learn:
                 state["learn_save"] = False
                 save_settings()
-            n_hot, n_bt, n_sta, n_rf = counts(now)
-            warn = config.SNIFFER and tick > 150 and not sniffer_ok(now)
+            n_hot, n_bt, n_rf = counts(now)
             # 표시는 항상 10칸으로 만들고, LED 개수에 맞게 늘린다(60개면 한 칸이 LED 6개).
-            frame = led_frame(n_hot, n_bt, n_sta, n_rf, tick, learn, warn,
-                              10, config.LED_BRIGHT)
+            frame = led_frame(n_hot, n_bt, n_rf, tick, learn, 10, config.LED_BRIGHT)
             hmode = hunt.active(now)
             if hmode != state["hmode"]:
                 # 정밀 탐색을 시작하거나 끝낼 때 블루투스 듣는 주기를 바꿔 다시 시작한다.
@@ -425,7 +373,7 @@ async def indicator():
                 leds.write()
                 shown = frame
             # LED 하나: 정상은 3초마다 짧게, 감지는 계속 켜짐, 기준 측정 중은 빠르게 깜박임
-            one = (tick % 2) if learn else 1 if (n_hot + n_bt + n_sta + n_rf) else (1 if tick % 30 == 0 else 0)
+            one = (tick % 2) if learn else 1 if (n_hot + n_bt + n_rf) else (1 if tick % 30 == 0 else 0)
             if hmode:   # 정밀 탐색: 신호가 셀수록 빠르게 깜박인다
                 one = 1 if tick % (12 - hunt.bars(ms)) == 0 else 0
             if not STICK:
@@ -434,7 +382,6 @@ async def indicator():
                 led_board.value(one)
             if tick % 50 == 0:
                 tr.sweep(now)
-                st.sweep(now)
                 record(now)
         except Exception as e:
             log_error("표시 루프", e)
@@ -451,9 +398,7 @@ async def main():
     ble.irq(ble_irq)
     start_scan()
     print("블루투스 듣기 시작")
-    if config.SNIFFER:
-        asyncio.create_task(sniffer_watch())
-    elif config.WIFI_SCAN:
+    if config.WIFI_SCAN:
         asyncio.create_task(wifi_watch())
     if config.RF_SENSOR:
         asyncio.create_task(rf_watch())
