@@ -37,7 +37,26 @@ pre{background:#1e222b;color:#e9edf3;border-radius:12px;padding:14px 16px;overfl
 .toc a{color:var(--ink)}
 .check li{list-style:"☐  ";margin:4px 0}
 .small{font-size:14px;color:var(--sub)}
-@media print{h2{break-before:page}main{max-width:none}pre{white-space:pre-wrap}}
+@page{size:A4;margin:14mm 13mm}
+@media print{
+  body{font-size:14.5px;line-height:1.65}
+  main{max-width:none;padding:0}
+  h1{font-size:26px}
+  h2{font-size:20px;margin:26px 0 8px;padding-top:12px;break-after:avoid}
+  h3{break-after:avoid}
+  p,li{orphans:3;widows:3}
+  .box,ol.steps>li,tr,table,pre,figure,svg,img,.shots,.toc,ul.check{break-inside:avoid}
+  h2+*,h3+*{break-before:avoid}
+  pre{white-space:pre-wrap}
+  .tablewrap{overflow:visible}
+  img.pic{max-height:105mm;width:auto;max-width:100%;display:block;margin:10px auto}
+  .newpage{break-before:page}
+  .shots.three figure{flex:0 1 165px}
+}
+.shots{display:flex;gap:14px;justify-content:center;align-items:flex-start;margin:14px 0}
+.shots figure{margin:0;flex:0 1 250px}
+.shots img{width:100%;border-radius:14px;border:1px solid var(--line);display:block}
+.shots.three figure{flex:0 1 200px}
 </style>
 </head>
 <body>
@@ -152,13 +171,13 @@ USB 케이블이 꽂힌 채로 부품을 꽂거나 빼지 않습니다.</div>
 <ol class="steps">
 <li>감지기를 충전기나 보조배터리에 꽂고 10초 기다립니다.</li>
 <li>휴대전화(블루투스 끔)로 감지기의 와이파이 <code>SCOUT</code>에 붙어 <code>192.168.4.1</code>을 엽니다.</li>
-<li>화면의 <b>"와이파이를 켠 기기"</b> 칸을 봅니다.</li>
+<li>레이더 탭의 레이더 아래에 <b>"와이파이 켠 기기"</b> 수가 나오는지 봅니다.</li>
 </ol>
 <div class="tablewrap"><table>
 <tr><th>보이는 것</th><th>뜻</th><th>할 일</th></tr>
-<tr><td>기기가 몇 줄 뜨거나 "잡힌 기기가 없습니다"</td><td>ESP32까지 정상</td><td>없음</td></tr>
+<tr><td>기기가 몇 줄 뜨거나 "감지된 기기 없음"</td><td>ESP32까지 정상</td><td>없음</td></tr>
 <tr><td>"와이파이 청취기(ESP32)에서 신호가 오지 않습니다"</td><td>ESP32의 말이 피코에 안 닿음</td><td>전원을 뽑고 <b>노랑과 흰색 선을 서로 바꿔</b> 꽂습니다</td></tr>
-<tr><td>"이 감지기에는 와이파이 청취기(ESP32)가 없습니다"</td><td>5장의 설정이 안 바뀜</td><td><code>SNIFFER = True</code>로 저장했는지 다시 봅니다</td></tr>
+<tr><td>아무 안내도 없는데 와이파이만 켠 전화가 전혀 잡히지 않는다</td><td>5장의 설정이 안 바뀌었을 수 있음</td><td><code>SNIFFER = True</code>로 저장했는지 다시 봅니다</td></tr>
 </table></div>
 
 <h3>LED 막대에서 달라지는 것</h3>
@@ -172,7 +191,7 @@ USB 케이블이 꽂힌 채로 부품을 꽂거나 빼지 않습니다.</div>
 <ol class="steps">
 <li>감지기를 제자리에 놓고 빈 교실에서 <b>기준 측정 (60초)</b>을 누릅니다. 교실 컴퓨터나 프린터처럼 늘 와이파이를 쓰는 기기가 감지에서 빠집니다.</li>
 <li>실험용 전화의 블루투스를 끄고 <b>와이파이만</b> 켠 채 교실의 가장 먼 자리에 놓습니다.</li>
-<li>전화 화면을 켰다 껐다 하며 "와이파이를 켠 기기"에 "감지"로 뜨기까지 걸린 시간을 적습니다.</li>
+<li>전화 화면을 켰다 껐다 하며 레이더 탭에 "와이파이 켠 기기"가 "감지"로 뜨기까지 걸린 시간을 적습니다.</li>
 <li>화면을 끈 채 5분 두었을 때도 잡히는지 봅니다.</li>
 <li>같은 전화를 옆 교실에 놓고 세기(dBm)를 적어 먼 자리의 값과 비교합니다.</li>
 </ol>
@@ -185,7 +204,7 @@ USB 케이블이 꽂힌 채로 부품을 꽂거나 빼지 않습니다.</div>
 <tr><td>Arduino IDE에 포트가 안 보인다</td><td>USB-C 케이블을 데이터 겸용으로 바꿉니다.</td></tr>
 <tr><td>업로드가 실패한다</td><td>XIAO의 B(BOOT) 단추를 누른 채 USB-C를 꽂고 다시 업로드합니다.</td></tr>
 <tr><td>"청취기에서 신호가 오지 않습니다"</td><td>스위치가 5V인지, 빨강·검정이 맞는지 본 뒤 노랑과 흰색을 서로 바꿉니다. 3장의 프로그램을 넣었는지도 확인합니다.</td></tr>
-<tr><td>늘 "와이파이를 켠 기기" 감지 상태다</td><td>빈 교실에서 기준 측정을 다시 합니다. 그래도 계속이면 <code>config.py</code>의 <code>STA_RSSI_MIN</code>을 -60으로 올립니다.</td></tr>
+<tr><td>늘 "와이파이 켠 기기" 감지 상태다</td><td>빈 교실에서 기준 측정을 다시 합니다. 그래도 계속이면 <code>config.py</code>의 <code>STA_RSSI_MIN</code>을 -60으로 올립니다.</td></tr>
 <tr><td>먼 자리의 전화가 안 잡힌다</td><td>XIAO의 안테나가 끼워졌는지 봅니다. <code>STA_RSSI_MIN</code>을 -80으로 낮춥니다.</td></tr>
 <tr><td>ESP32를 뗀 감지기가 이상하다</td><td>그 감지기의 <code>SNIFFER</code>를 다시 <code>False</code>로 바꿉니다.</td></tr>
 </table></div>

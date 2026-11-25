@@ -37,7 +37,26 @@ pre{background:#1e222b;color:#e9edf3;border-radius:12px;padding:14px 16px;overfl
 .toc a{color:var(--ink)}
 .check li{list-style:"☐  ";margin:4px 0}
 .small{font-size:14px;color:var(--sub)}
-@media print{h2{break-before:page}main{max-width:none}pre{white-space:pre-wrap}}
+@page{size:A4;margin:14mm 13mm}
+@media print{
+  body{font-size:14.5px;line-height:1.65}
+  main{max-width:none;padding:0}
+  h1{font-size:26px}
+  h2{font-size:20px;margin:26px 0 8px;padding-top:12px;break-after:avoid}
+  h3{break-after:avoid}
+  p,li{orphans:3;widows:3}
+  .box,ol.steps>li,tr,table,pre,figure,svg,img,.shots,.toc,ul.check{break-inside:avoid}
+  h2+*,h3+*{break-before:avoid}
+  pre{white-space:pre-wrap}
+  .tablewrap{overflow:visible}
+  img.pic{max-height:105mm;width:auto;max-width:100%;display:block;margin:10px auto}
+  .newpage{break-before:page}
+  .shots.three figure{flex:0 1 165px}
+}
+.shots{display:flex;gap:14px;justify-content:center;align-items:flex-start;margin:14px 0}
+.shots figure{margin:0;flex:0 1 250px}
+.shots img{width:100%;border-radius:14px;border:1px solid var(--line);display:block}
+.shots.three figure{flex:0 1 200px}
 </style>
 </head>
 <body>
@@ -142,7 +161,7 @@ USB 케이블이 꽂힌 채로 부품을 꽂거나 빼지 않습니다.</div>
 <ul class="check">
 <li>피코의 USB 방향이 쉴드의 USB 표시와 같다</li>
 <li>스위치가 3V3 쪽이다</li>
-<li>LED 막대가 D16에 꽂혀 있다</li>
+<li>(LED를 달았다면) LED 막대가 D16에 꽂혀 있다</li>
 </ul>
 
 <h2 id="s5">5. 피코에 프로그램 넣기</h2>
@@ -191,23 +210,34 @@ AP_CHANNEL = 1           # 7장의 표를 보고 1, 6, 11 중 하나</pre>
 <h3>화면에서 확인할 것</h3>
 <div class="tablewrap"><table>
 <tr><th>보이는 것</th><th>뜻</th><th>할 일</th></tr>
-<tr><td>블루투스 기기 목록에 무언가 뜬다</td><td>피코가 블루투스를 잘 듣고 있음</td><td>없음</td></tr>
-<tr><td>"이 감지기에는 와이파이 청취기(ESP32)가 없습니다"</td><td>ESP32를 아직 달지 않았다는 안내</td><td>정상입니다</td></tr>
+<tr><td>"지금 가까이에서 잡히는 것"이나 로그 탭에 무언가 뜬다</td><td>피코가 블루투스를 잘 듣고 있음</td><td>없음</td></tr>
 <tr><td>"감지됨"이 계속 뜬다</td><td>주변에 기기가 많음(교무실 등)</td><td>정상입니다. 교실에서 기준 측정을 하면 줄어듭니다</td></tr>
 </table></div>
 
-<h3>대시보드: 8대의 기록을 한 화면에</h3>
+<h3>화면 읽는 법: 여러 대의 기록을 한 화면에</h3>
 <p>8대 모두 와이파이 이름이 <code>SCOUT</code>로 같습니다. 복도를 걸으면 휴대전화가 가까운 감지기로 저절로 옮겨 붙고, 화면은 그때마다 그 감지기의 최근 기록을 받아 휴대전화 안에 모읍니다. 한 바퀴 돌고 나면 <b>층별·위치별로 8대의 기록이 한 화면</b>에 보입니다.</p>
+<div class="tablewrap"><table>
+<tr><th style="white-space:nowrap">탭</th><th>뜻</th></tr>
+<tr><td style="white-space:nowrap">레이더</td><td>지금 연결된 감지기가 잡는 기기. 가운데에 가까울수록 신호가 셉니다. 파랑은 블루투스, 빨강은 와이파이, 흐린 점은 약하거나 확인 중인 신호. <b>방향은 실제 방향이 아닙니다.</b></td></tr>
+<tr><td style="white-space:nowrap">건물</td><td>감지기 여러 대의 현황을 학년·반 위치대로. 반별 대수, n분 전과의 비교, 새로 잡힌 기기 이름. "기기 이름" 보기로 바꾸면 위치별 이름만 봅니다. 1대뿐이면 한 칸만 채워집니다.</td></tr>
+<tr><td style="white-space:nowrap">탐색</td><td>정밀 탐색. 기기 하나를 골라 그 신호 세기만 빠르게 따라갑니다. 감지기를 들고 다니면 가까워질수록 숫자가 커집니다.</td></tr>
+<tr><td style="white-space:nowrap">로그</td><td>조금 전까지 잡히던 기기와 감지 기록(언제, 무엇이, 몇 분 동안).</td></tr>
+<tr><td style="white-space:nowrap">설정</td><td>감지 세기 기준, 기준 측정(빈 교실에서만).</td></tr>
+</table></div>
+<div class="shots three">
+<figure><img src="img/screen_radar.jpg" alt="레이더 탭 화면 예시"><figcaption>레이더</figcaption></figure>
+<figure><img src="img/screen_building.jpg" alt="건물 탭 화면 예시"><figcaption>건물</figcaption></figure>
+<figure><img src="img/screen_hunt.jpg" alt="탐색 탭 화면 예시"><figcaption>탐색</figcaption></figure>
+</div>
+<p class="small">위 화면은 컴퓨터에서 가상 자료로 띄운 예시입니다.</p>
 <ul>
-<li>맨 위 <b>레이더</b>: 지금 연결된 감지기가 잡고 있는 신호. 가운데에 가까울수록 센 신호입니다. 점의 방향은 실제 방향이 아닙니다.</li>
-<li><b>전체 감지기</b> 칸: 층과 위치(가 변 A·B, 나 변 C·D)대로 놓입니다. 칸마다 최근 1·3·6시간의 감지 막대와 "몇 분 전에 모았는지"가 나옵니다. 칸을 누르면 그 감지기의 감지 기록(시각, 종류, 지속 시간)이 아래에 나옵니다.</li>
 <li>휴대전화가 옮겨 붙는 데 수십 초가 걸릴 수 있습니다. 감지기 앞에서 화면 오른쪽 위의 "지금 연결" 이름이 바뀔 때까지 잠깐 기다립니다. 안 바뀌면 와이파이를 껐다 켭니다.</li>
 <li>기록은 감지기의 메모리에 최근 6시간만 있고 <b>전원이 꺼지면 사라집니다</b>. 휴대전화에 모은 것은 "기록 지우기"를 누를 때까지 남습니다.</li>
 <li>와이파이에 붙을 때 저절로 뜨는 작은 창이 아니라 <b>사파리나 크롬</b>에서 열어야 기록이 모입니다.</li>
 </ul>
 <h3>LED가 알려 주는 것</h3>
 <div class="box tip"><b>LED 하나만 있어도 됩니다</b>
-<code>config.py</code>의 <code>LED_TYPE</code>이 <code>"single"</code>이면 D16의 LED 하나로 알립니다(3초마다 반짝 = 정상, 계속 켜짐 = 감지, 빠른 깜박임 = 기준 측정). 피코 본체의 작은 초록 LED도 똑같이 움직이므로 LED가 없어도 확인할 수 있습니다. LED 10개 막대를 달면 <code>"stick"</code>으로 바꾸고 아래 표대로 봅니다.</div>
+<code>config.py</code>의 <code>LED_TYPE</code>이 <code>"single"</code>이면 D16의 LED 하나로 알립니다(3초마다 반짝 = 정상, 계속 켜짐 = 감지, 빠른 깜박임 = 기준 측정). 피코 본체의 작은 초록 LED도 똑같이 움직이므로 LED가 없어도 확인할 수 있습니다. 기본값 <code>"stick"</code>은 LED 줄(막대)용이며, 아래 표대로 봅니다.</div>
 <div class="tablewrap"><table>
 <tr><th>LED 막대</th><th>뜻</th></tr>
 <tr><td>첫 칸이 <b style="color:#1b7a48">초록</b></td><td>정상, 감지 없음</td></tr>
@@ -216,6 +246,7 @@ AP_CHANNEL = 1           # 7장의 표를 보고 1, 6, 11 중 하나</pre>
 <tr><td><b>흰색</b> 칸</td><td>광대역 전파 급증 (센서를 달고 켠 감지기만)</td></tr>
 <tr><td>10칸이 모두 켜짐</td><td>합쳐서 10개 이상. 종류마다 최소 한 칸은 보입니다</td></tr>
 <tr><td>초록이 한 칸 건너 번갈아 깜박</td><td>기준 측정 중(60초)</td></tr>
+<tr><td><b style="color:#8a5a00">노랑</b> 칸</td><td>정밀 탐색 중. 고른 기기의 신호가 셀수록 칸이 늘어남. 첫 칸만 깜박이면 신호가 끊긴 것</td></tr>
 <tr><td>마지막 칸이 주황으로 깜박</td><td>ESP32에서 신호가 오지 않음</td></tr>
 <tr><td>3초 넘게 모두 꺼짐</td><td>전원이나 프로그램 문제</td></tr>
 </table></div>
@@ -273,10 +304,10 @@ AP_CHANNEL = 1           # 7장의 표를 보고 1, 6, 11 중 하나</pre>
 <p>건물마다 벽이 달라서 직접 재 봐야 합니다. 1대와 휴대전화 두 대(확인용, 실험용)면 됩니다. 값은 종이에 적어 둡니다.</p>
 <ol class="steps">
 <li>감지기를 정한 자리에 놓고 확인용 기기로 화면을 엽니다(확인용 기기는 블루투스 끔).</li>
-<li>실험용 전화의 <b>블루투스만</b> 켜고 교실의 가장 먼 자리(창가 뒤 구석) 책상 위에 놓습니다. "블루투스 기기" 목록에 뜬 세기(dBm)를 적습니다.</li>
+<li>실험용 전화의 <b>블루투스만</b> 켜고 교실의 가장 먼 자리(창가 뒤 구석) 책상 위에 놓습니다. 레이더 탭의 "지금 가까이에서 잡히는 것"에 뜬 세기(dBm)를 적습니다. 거기 없으면 로그 탭의 "지금 잡히지만 약한 신호"에서 찾습니다.</li>
 <li>같은 전화를 가방 안에 넣고 다시 적습니다. 무선 이어폰이 있으면 같은 방식으로 합니다.</li>
 <li>같은 전화를 <b>옆 교실, 위·아래층 같은 자리, 중정 건너편</b>에 놓고 각각 적습니다.</li>
-<li>실험용 전화의 <b>핫스팟</b>을 켭니다. "와이파이 신호" 목록에 1분 안에 "감지"로 뜨는지 봅니다.</li>
+<li>실험용 전화의 <b>핫스팟</b>을 켭니다. 레이더 탭에 1분 안에 빨간 점과 "감지"로 뜨는지 봅니다.</li>
 <li>화면 아래 설정의 <b>더 멀리까지 / 가까운 것만</b>으로 기준을 맞춥니다. 2~3에서 적은 값보다 조금 낮고, 4에서 적은 값보다 높은 숫자가 좋습니다.</li>
 </ol>
 <div class="box tip"><b>dBm 읽는 법</b>
